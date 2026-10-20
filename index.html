@@ -734,14 +734,53 @@
 
     <!-- JAVASCRIPT CORE -->
     <script>
-        /* REGISTER SERVICE WORKER FOR PWA SUPPORT */
+        /* REGISTER SERVICE WORKER & PWA INSTALLATION PROMPT */
+        let deferredPrompt = null;
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').catch((err) => {
-                    console.error('Falha ao registrar Service Worker:', err);
+                    console.error('Erro ao registrar Service Worker:', err);
                 });
             });
         }
+
+        // Captura o evento nativo de instalação do navegador
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+
+            // Exibe o modal se o usuário ainda não tiver recusado na sessão atual
+            if (!sessionStorage.getItem('pwa_prompt_dismissed')) {
+                const installModal = document.getElementById('pwa-install-modal');
+                if (installModal) installModal.classList.remove('hidden');
+            }
+        });
+
+        // Ações dos botões do modal de instalação
+        document.addEventListener('DOMContentLoaded', () => {
+            const installBtn = document.getElementById('pwa-install-btn');
+            const dismissBtn = document.getElementById('pwa-dismiss-btn');
+            const installModal = document.getElementById('pwa-install-modal');
+
+            if (installBtn) {
+                installBtn.onclick = async () => {
+                    if (installModal) installModal.classList.add('hidden');
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        deferredPrompt = null;
+                    }
+                };
+            }
+
+            if (dismissBtn) {
+                dismissBtn.onclick = () => {
+                    if (installModal) installModal.classList.add('hidden');
+                    sessionStorage.setItem('pwa_prompt_dismissed', 'true');
+                };
+            }
+        });
 
         /* CATEGORIES DEFINITIONS */
         const CATEGORIES = [
@@ -2202,5 +2241,25 @@
             showSection('sec-home');
         };
     </script>
+    <!-- MODAL DE INSTALAÇÃO PWA (Instalar / Talvez Depois) -->
+    <div id="pwa-install-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass border border-sky-500/40 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-center">
+            <div class="w-14 h-14 bg-sky-500/20 text-sky-400 rounded-2xl flex items-center justify-center mx-auto text-2xl border border-sky-500/40">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-extrabold text-slate-100">Instalar Pixel Quiz?</h3>
+                <p class="text-xs text-slate-300 mt-1">Instale o aplicativo na sua tela inicial para jogar offline e ter uma experiência em tela cheia.</p>
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button id="pwa-dismiss-btn" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl text-xs active:scale-95 transition">
+                    Talvez depois
+                </button>
+                <button id="pwa-install-btn" class="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-extrabold py-2.5 rounded-xl text-xs active:scale-95 transition shadow-lg shadow-sky-500/20">
+                    Instalar
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
