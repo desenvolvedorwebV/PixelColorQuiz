@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pixel-quiz-v2';
+const CACHE_NAME = 'pixel-quiz-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
