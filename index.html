@@ -1,0 +1,2206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Pixel Quiz Color - Jogo de Pintura e Quiz</title>
+
+    <!-- Configurações para PWA e Suporte Mobile (iOS / Android) -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pixel Quiz">
+    <link rel="apple-touch-icon" href="PixelColorQuiz.png">
+    <link rel="icon" type="image/png" href="PixelColorQuiz.png">
+
+    <!-- Web App Manifest (Gerado Inline para Instalação) -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --sat: env(safe-area-inset-top, 0px);
+            --sab: env(safe-area-inset-bottom, 0px);
+        }
+
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        .app-viewport {
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        .bottom-nav-safe {
+            padding-bottom: max(0.5rem, var(--sab));
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .nav-item.active {
+            color: #38bdf8;
+        }
+        .nav-item.active i {
+            transform: translateY(-2px);
+            filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.5));
+        }
+
+        #canvas-container {
+            touch-action: none;
+            cursor: grab;
+            background-image: 
+                linear-gradient(45deg, #1e293b 25%, transparent 25%), 
+                linear-gradient(-45deg, #1e293b 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #1e293b 75%), 
+                linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+
+        /* Card Flip Animation */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s ease-in-out;
+            transform-style: preserve-3d;
+        }
+        .card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 0.75rem;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        @keyframes shake-elimination {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+        .animate-eliminate {
+            animation: shake-elimination 0.5s ease-in-out forwards;
+            opacity: 0.25;
+            pointer-events: none;
+            filter: grayscale(1);
+        }
+
+        @keyframes shake-screen {
+            0%, 100% { transform: translate(0, 0); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-10px, 6px); }
+            20%, 40%, 60%, 80% { transform: translate(10px, -6px); }
+        }
+        .animate-shake-screen {
+            animation: shake-screen 0.4s ease-in-out;
+        }
+
+        @keyframes pulse-autorespond {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .autorespond-glow {
+            animation: pulse-autorespond 1s ease-in-out infinite;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="app-viewport w-screen overflow-hidden flex flex-col justify-between select-none">
+    <!-- POWER-UP EMPTY TOAST MODAL -->
+    <div id="toast-powerup-empty" class="fixed top-8 left-1/2 -translate-x-1/2 z-[100] transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-6 max-w-xs w-[90%]">
+        <div class="glass border-2 border-amber-500 bg-slate-900/98 rounded-2xl p-3.5 shadow-2xl flex items-center space-x-3 text-slate-200">
+            <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-triangle-exclamation text-base"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <h4 id="toast-powerup-title" class="text-xs font-black text-amber-300 leading-tight">Sem Power-ups!</h4>
+                <p class="text-[11px] text-slate-300 mt-0.5 leading-tight">
+                    <span id="toast-powerup-needed">Faltam 10 acertos para ganhar o próximo powerup. Continue jogando.</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN SPA SCREEN CONTAINER -->
+    <main id="app-container" class="flex-1 relative overflow-hidden w-full h-full">
+        
+        <!-- ==================== HOME SECTION ==================== -->
+        <section id="sec-home" class="spa-section absolute inset-0 overflow-y-auto p-4 pb-28 space-y-5 no-scrollbar">
+            <!-- Header com Imagem de Ícone Local -->
+            <div class="flex justify-between items-center pt-2">
+                <div class="flex items-center space-x-3 h-10">
+                    <img src="PixelColorQuiz.png" alt="Ícone do Jogo" class="h-full aspect-square rounded-xl object-cover border border-slate-700/50 shadow-md shrink-0">
+                    <div class="flex flex-col justify-center h-full">
+                        <h1 class="text-2xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-indigo-400 to-amber-400">Pixel Quiz Color</h1>
+                        <p class="text-xs text-slate-200 mt-1">Pinte respondendo perguntas!</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700/50 shrink-0" style="display: none;">
+                    <i class="fa-solid fa-award text-amber-400 text-xs"></i>
+                    <span id="home-user-lvl" class="text-xs font-bold text-slate-200">Nível 1</span>
+                </div>
+            </div>
+
+            <!-- Resume Painting Hero Card -->
+            <div id="home-resume-card" class="hidden glass rounded-2xl p-4 relative overflow-hidden border border-sky-500/30">
+                <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-sky-500/10 rounded-full blur-2xl"></div>
+                <div class="flex items-center space-x-4">
+                    <canvas id="home-resume-canvas" class="w-20 h-20 rounded-xl bg-slate-900 border border-slate-700 object-contain shadow-md"></canvas>
+                    <div class="flex-1 min-w-0">
+                        <span class="text-[10px] uppercase tracking-wider font-bold text-sky-400 bg-sky-950/60 px-2 py-0.5 rounded-md border border-sky-800/50">Continuar Desafio</span>
+                        <h3 id="home-resume-title" class="font-bold text-base text-slate-100 truncate mt-1">Carregando...</h3>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-2">
+                            <div id="home-resume-bar" class="bg-gradient-to-r from-sky-500 to-indigo-500 h-full w-0 transition-all duration-300"></div>
+                        </div>
+                        <p id="home-resume-percent" class="text-xs text-slate-400 mt-1">0% concluído</p>
+                    </div>
+                </div>
+                <button id="home-resume-btn" class="w-full mt-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-sky-500/20 active:scale-[0.98] transition flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-play text-sm"></i>
+                    <span>Retomar Desenho</span>
+                </button>
+            </div>
+
+            <!-- Power-Up Inventory Dashboard Card -->
+            <div class="glass rounded-2xl p-4 border border-amber-500/30 bg-gradient-to-r from-slate-900 via-slate-800/80 to-amber-950/20 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-400 text-sm"></i>
+                        <h3 class="text-xs font-black uppercase text-amber-300 tracking-wider">Power-ups</h3>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/60 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-circle-question text-emerald-400 text-xs"></i>
+                            <span class="text-xs font-bold text-slate-200">Gabarito</span>
+                        </div>
+                        <span id="home-autorespond-count" class="text-sm font-black text-emerald-400 bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-700">1</span>
+                    </div>
+
+                    <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/60 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-eraser text-indigo-400 text-xs"></i>
+                            <span class="text-xs font-bold text-slate-200">Borracha</span>
+                        </div>
+                        <span id="home-eliminate-count" class="text-sm font-black text-indigo-400 bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-700">1</span>
+                    </div>
+                </div>
+
+                <!-- Progress bar to next power-up -->
+                <div class="space-y-1 pt-1 border-t border-slate-800">
+                    <div class="flex justify-between text-[10px] font-bold text-slate-400">
+                        <span>Ganhar +1 Power-up (Sorteio)</span>
+                        <span id="home-powerup-progress-text" class="text-amber-400">0 / 10 acertos</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700/50">
+                        <div id="home-powerup-progress-bar" class="bg-gradient-to-r from-amber-500 to-yellow-400 h-full w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Stats Grid -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="glass-card p-3.5 rounded-2xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400">
+                        <span class="text-xs font-medium">Concluídos</span>
+                        <i class="fa-solid fa-square-check text-emerald-400"></i>
+                    </div>
+                    <div class="mt-2">
+                        <span id="stat-completed-count" class="text-2xl font-black text-slate-100">0</span>
+                    </div>
+                </div>
+
+                <div class="glass-card p-3.5 rounded-2xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400">
+                        <span class="text-xs font-medium">Acertos</span>
+                        <i class="fa-solid fa-circle-check text-sky-400"></i>
+                    </div>
+                    <div class="mt-2">
+                        <span id="stat-total-equations" class="text-2xl font-black text-slate-100">0</span>
+                    </div>
+                </div>
+
+                <div class="glass-card p-3.5 rounded-2xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400">
+                        <span class="text-xs font-medium">Precisão</span>
+                        <i class="fa-solid fa-bullseye text-rose-400"></i>
+                    </div>
+                    <div class="mt-2">
+                        <span id="stat-accuracy" class="text-2xl font-black text-slate-100">100%</span>
+                    </div>
+                </div>
+
+                <div class="glass-card p-3.5 rounded-2xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400">
+                        <span class="text-xs font-medium">Tempo Jogado</span>
+                        <i class="fa-solid fa-clock text-indigo-400"></i>
+                    </div>
+                    <div class="mt-2">
+                        <span id="stat-total-time" class="text-xl font-extrabold text-slate-100">00:00:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Accordion -->
+            <div class="glass rounded-2xl overflow-hidden border border-slate-700/50">
+                <button id="accordion-performance-btn" class="w-full p-4 flex justify-between items-center text-left focus:outline-none hover:bg-slate-800/40 transition">
+                    <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-sky-400"></i> Desempenho
+                    </h2>
+                    <i id="accordion-chevron" class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform duration-300"></i>
+                </button>
+                
+                <div id="accordion-performance-content" class="hidden p-4 pt-0 space-y-3 border-t border-slate-800/80">
+                    <div class="divide-y divide-slate-800 text-xs pt-2">
+                        <div class="py-2 flex justify-between items-center">
+                            <span class="text-slate-400">Dicas Utilizadas</span>
+                            <span id="stat-powerups-used" class="font-bold text-amber-400">0</span>
+                        </div>
+                        <div class="py-2 flex justify-between items-center">
+                            <span class="text-slate-400">Erros</span>
+                            <span id="stat-total-errors" class="font-bold text-rose-400">0</span>
+                        </div>
+                        <div class="py-2 flex justify-between items-center">
+                            <span class="text-slate-400">Progresso Geral</span>
+                            <span id="stat-game-progress" class="font-bold text-sky-400">0%</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div id="stat-game-progress-bar" class="bg-gradient-to-r from-emerald-500 to-sky-500 h-full w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center pt-4">
+                <p class="text-xs text-slate-500">Pixel Quiz Color v0.1</p>
+                <p class="text-[10px] text-slate-600">Aprenda e divirta-se colorindo!</p>
+                <p class="text-[10px] text-slate-600">©2026 Viniciusav</p>
+            </div>
+        </section>
+
+        <!-- ==================== CATEGORIES SECTION ==================== -->
+        <section id="sec-categories" class="spa-section absolute inset-0 overflow-y-auto p-4 pb-28 space-y-4 no-scrollbar hidden">
+            <h1 class="text-xl font-extrabold text-slate-100"><i class="fa-solid fa-layer-group text-lg"></i> Categorias</h1>
+            
+            <div id="categories-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Populated Dynamically -->
+            </div>
+
+            <div class="text-center pt-4">
+                <p class="text-xs text-slate-500">Pixel Quiz Color v0.1</p>
+                <p class="text-[10px] text-slate-600">Aprenda e divirta-se colorindo!</p>
+                <p class="text-[10px] text-slate-600">©2026 Viniciusav</p>
+            </div>
+        </section>
+
+        <!-- ==================== CATEGORY DETAIL SUB-PAGE ==================== -->
+        <section id="sec-category-detail" class="spa-section absolute inset-0 overflow-y-auto p-4 pb-28 space-y-4 no-scrollbar hidden bg-slate-900 z-10">
+            <div class="flex items-center space-x-3">
+                <button id="cat-detail-back-btn" class="w-9 h-9 glass rounded-full flex items-center justify-center text-slate-300 active:scale-95">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div>
+                    <h1 id="cat-detail-title" class="text-lg font-bold text-slate-100">Categoria</h1>
+                    <p id="cat-detail-subtitle" class="text-xs text-slate-400">0 de 0 pintados</p>
+                </div>
+            </div>
+            
+            <div id="cat-detail-drawings-grid" class="grid grid-cols-2 gap-3">
+                <!-- Populated Dynamically -->
+            </div>
+            <div class="text-center pt-4">
+                <p class="text-xs text-slate-500">Pixel Quiz Color v0.1</p>
+                <p class="text-[10px] text-slate-600">Aprenda e divirta-se colorindo!</p>
+                <p class="text-[10px] text-slate-600">©2026 Viniciusav</p>
+            </div>
+        </section>
+
+        <!-- ==================== ALBUM SECTION ==================== -->
+        <section id="sec-album" class="spa-section absolute inset-0 overflow-y-auto p-4 pb-28 space-y-4 no-scrollbar hidden">
+            <h1 class="text-xl font-extrabold text-slate-100"><i class="fa-solid fa-images text-lg"></i> Álbum de Arte</h1>
+            
+            <div class="flex bg-slate-800/80 p-1 rounded-xl border border-slate-700/50">
+                <button id="album-tab-completed" class="flex-1 py-2 rounded-lg text-xs font-bold transition text-sky-400 bg-slate-700/80 shadow">
+                    Concluídos (<span id="album-completed-count">0</span>)
+                </button>
+                <button id="album-tab-progress" class="flex-1 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200 transition">
+                    Em Andamento (<span id="album-progress-count">0</span>)
+                </button>
+            </div>
+
+            <div id="album-content-completed" class="grid grid-cols-2 gap-3"></div>
+            <div id="album-content-progress" class="grid grid-cols-1 gap-3 hidden"></div>
+
+            <div class="text-center pt-4">
+                <p class="text-xs text-slate-500">Pixel Quiz Color v0.1</p>
+                <p class="text-[10px] text-slate-600">Aprenda e divirta-se colorindo!</p>
+                <p class="text-[10px] text-slate-600">©2026 Viniciusav</p>
+            </div>
+        </section>
+
+        <!-- ==================== SETTINGS SECTION ==================== -->
+        <section id="sec-settings" class="spa-section absolute inset-0 overflow-y-auto p-4 pb-28 space-y-5 no-scrollbar hidden">
+            <h1 class="text-xl font-extrabold text-slate-100"><i class="fa-solid fa-gear text-lg"></i> Ajustes</h1>
+
+            <div class="glass rounded-2xl p-4 space-y-4">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Preferências do Jogo</h2>
+                
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-sky-500/20 flex items-center justify-center text-sky-400">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-200">Efeitos Sonoros</p>
+                            <p class="text-[11px] text-slate-400">Sons de toque e acerto/erro (MP3)</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="setting-sound" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+                    </label>
+                </div>
+
+                <!-- Music Setting Toggle -->
+                <div class="flex justify-between items-center pt-2 border-t border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400">
+                            <i class="fa-solid fa-music"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-200">Música de Fundo</p>
+                            <p class="text-[11px] text-slate-400">Música contínua nos desenhos</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="setting-music" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+                    </label>
+                </div>
+
+                <div class="flex justify-between items-center pt-2 border-t border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                            <i class="fa-solid fa-mobile-screen-button"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-200">Vibração (Haptic)</p>
+                            <p class="text-[11px] text-slate-400">Feedback tátil ao interagir</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="setting-vibration" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+                    </label>
+                </div>
+
+                <!-- Color Animation Toggle -->
+                <div class="flex justify-between items-center pt-2 border-t border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400">
+                            <i class="fa-solid fa-paintbrush"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-200">Animação ao Colorir</p>
+                            <p class="text-[11px] text-slate-400">Pinta quadradinho por quadradinho</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="setting-color-animation" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Data Management -->
+            <div class="glass rounded-2xl p-4 space-y-3">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Dados & Progresso</h2>
+                
+                <button id="btn-export-save" class="w-full bg-slate-800 hover:bg-slate-700/80 text-slate-200 border border-slate-700/60 font-medium py-3 px-4 rounded-xl flex items-center justify-between active:scale-[0.99] transition">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-download text-sky-400"></i>
+                        <span class="text-sm">Exportar Progresso (JSON)</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs text-slate-500"></i>
+                </button>
+
+                <button id="btn-import-save" class="w-full bg-slate-800 hover:bg-slate-700/80 text-slate-200 border border-slate-700/60 font-medium py-3 px-4 rounded-xl flex items-center justify-between active:scale-[0.99] transition">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-upload text-indigo-400"></i>
+                        <span class="text-sm">Importar Progresso (.json)</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs text-slate-500"></i>
+                </button>
+                <input type="file" id="import-file-input" accept=".json" class="hidden">
+
+                <button id="btn-reset-save" class="w-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-medium py-3 px-4 rounded-xl flex items-center justify-between active:scale-[0.99] transition">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-trash-can text-rose-400"></i>
+                        <span class="text-sm">Reiniciar Todo o Progresso</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs text-rose-500/50"></i>
+                </button>
+            </div>
+
+            <div class="text-center pt-4">
+                <p class="text-xs text-slate-500">Pixel Quiz Color v0.1</p>
+                <p class="text-[10px] text-slate-600">Aprenda e divirta-se colorindo!</p>
+                <p class="text-[10px] text-slate-600">©2026 Viniciusav</p>
+            </div>
+        </section>
+
+        <!-- ==================== CANVAS GAMEPLAY SCREEN ==================== -->
+        <section id="sec-canvas-game" class="spa-section fixed inset-0 flex flex-col bg-slate-950 z-40 hidden">
+            <!-- Top Bar -->
+            <header class="glass py-2 px-3 flex items-center justify-between border-b border-slate-800 z-10">
+                <button id="game-back-btn" class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 active:scale-95 shrink-0">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+
+                <div class="text-center flex-1 mx-2 min-w-0">
+                    <h2 id="game-drawing-title" class="text-sm font-bold text-slate-100 truncate">Desenho</h2>
+                    <div class="flex items-center justify-center space-x-2 text-[11px] text-slate-400">
+                        <span id="game-category-tag" class="text-sky-400 font-semibold truncate">Conhecimentos Gerais</span>
+                        <span>•</span>
+                        <span id="game-progress-text">0%</span>
+                        <span>•</span>
+                        <span id="game-timer">00:00</span>
+                    </div>
+                </div>
+
+                <!-- Level Music Toggle Button in Top Bar -->
+                <button id="game-music-btn" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700/80 flex items-center justify-center text-purple-400 active:scale-95 shrink-0 transition" title="Música do Nível">
+                    <i id="game-music-icon" class="fa-solid fa-music text-xs"></i>
+                </button>
+            </header>
+
+            <!-- Color VS Values Legend Banner -->
+            <div class="bg-slate-900/90 border-b border-slate-800 px-3 py-2 text-center flex items-center justify-center">
+                <div id="active-color-badge" class="inline-flex items-center px-3 py-1 rounded-full border border-slate-700 bg-slate-800 text-xs font-bold text-slate-100 space-x-2 shadow-inner">
+                    <span id="active-color-text"><i class="fa-solid fa-triangle-exclamation"></i> Clique em uma cor ou em um pixel para responder.</span>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div id="canvas-container" class="flex-1 relative overflow-hidden flex items-center justify-center">
+                <canvas id="paint-canvas" class="shadow-2xl"></canvas>
+                
+                <!-- Zoom & Music Controls -->
+                <div class="absolute right-3 bottom-3 flex flex-col space-y-2 z-20" onclick="event.stopPropagation()">
+                    <button id="btn-zoom-in" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-200 active:scale-95 shadow-lg">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                    <button id="btn-zoom-out" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-200 active:scale-95 shadow-lg">
+                        <i class="fa-solid fa-minus"></i>
+                    </button>
+                    <button id="btn-zoom-reset" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-200 active:scale-95 shadow-lg">
+                        <i class="fa-solid fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bottom Palette -->
+            <footer class="glass py-2.5 px-2 border-t border-slate-800 z-10 flex flex-col justify-center min-h-[90px] bottom-nav-safe">
+                <div id="color-palette-container" class="flex items-center space-x-2 overflow-x-auto px-2 no-scrollbar py-1"></div>
+            </footer>
+        </section>
+
+    </main>
+
+    <!-- FIXED BOTTOM NAVIGATION BAR -->
+    <nav id="bottom-nav" class="glass border-t border-slate-800/80 py-2 px-3 flex justify-around items-center z-30 shrink-0 w-full bottom-nav-safe">
+        <button data-target="sec-home" class="nav-item active flex flex-col items-center justify-center space-y-1 w-16 text-slate-400 transition-all">
+            <i class="fa-solid fa-house text-lg"></i>
+            <span class="text-[10px] font-medium">Início</span>
+        </button>
+        <button data-target="sec-categories" class="nav-item flex flex-col items-center justify-center space-y-1 w-16 text-slate-400 transition-all">
+            <i class="fa-solid fa-layer-group text-lg"></i>
+            <span class="text-[10px] font-medium">Categorias</span>
+        </button>
+        <button data-target="sec-album" class="nav-item flex flex-col items-center justify-center space-y-1 w-16 text-slate-400 transition-all">
+            <i class="fa-solid fa-images text-lg"></i>
+            <span class="text-[10px] font-medium">Álbum</span>
+        </button>
+        <button data-target="sec-settings" class="nav-item flex flex-col items-center justify-center space-y-1 w-16 text-slate-400 transition-all">
+            <i class="fa-solid fa-gear text-lg"></i>
+            <span class="text-[10px] font-medium">Ajustes</span>
+        </button>
+    </nav>
+
+    <!-- ==================== QUIZ MODAL WITH POWERUPS INCLUDED ==================== -->
+    <div id="quiz-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass border border-sky-500/40 rounded-2xl max-w-md w-full p-5 space-y-3 shadow-2xl relative">
+            
+            <!-- Header (Cor do Pixel + Navegação entre Perguntas + Fechar) -->
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-2">
+                    <div id="quiz-modal-color-dot" class="w-4 h-4 rounded-full border border-black/30"></div>
+                    <span id="quiz-modal-color-name" class="text-xs font-bold text-slate-200">Cor</span>
+                </div>
+
+                <!-- Painel de Navegação de Perguntas quando houver mais de uma -->
+                <div id="quiz-modal-nav-container" class="hidden items-center space-x-2 bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-700/60">
+                    <button id="quiz-nav-prev" class="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center text-xs transition active:scale-95 disabled:opacity-30">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <span id="quiz-nav-indicator" class="text-[11px] font-bold text-sky-400">Pergunta 1 de 2</span>
+                    <button id="quiz-nav-next" class="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center text-xs transition active:scale-95 disabled:opacity-30">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <button id="quiz-modal-close-btn" class="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Power-up Bar na LINHA DE BAIXO -->
+            <div class="relative">
+                <div class="flex items-center justify-center space-x-3 bg-slate-900/60 p-2 rounded-xl border border-slate-800">
+                    <!-- Autorespond Powerup Button -->
+                    <button id="powerup-btn-autorespond" class="flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-900/60 border border-emerald-500/50 text-emerald-300 text-xs font-bold flex items-center justify-center space-x-2 transition active:scale-95 shadow">
+                        <i class="fa-solid fa-circle-question text-xs text-emerald-400"></i>
+                        <span>Gabarito</span>
+                        <span id="powerup-badge-autorespond" class="bg-emerald-500 text-slate-950 text-[10px] px-2 py-0.5 rounded-full font-black ml-1">1</span>
+                    </button>
+
+                    <!-- Eliminate Powerup Button -->
+                    <button id="powerup-btn-eliminate" class="flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-indigo-900/60 border border-indigo-500/50 text-indigo-300 text-xs font-bold flex items-center justify-center space-x-2 transition active:scale-95 shadow">
+                        <i class="fa-solid fa-eraser text-xs text-indigo-400"></i>
+                        <span>Borracha</span>
+                        <span id="powerup-badge-eliminate" class="bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black ml-1">1</span>
+                    </button>
+                </div>
+
+                <!-- Floating Card Draw Popover -->
+                <div id="card-draw-container" class="hidden absolute left-0 right-0 top-12 z-20 bg-slate-900 border-2 border-indigo-500/80 rounded-2xl p-3 text-center space-y-2 shadow-2xl animate-fade-in backdrop-blur-md">
+                    <p class="text-xs font-bold text-indigo-300 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-clone"></i> Escolha uma!
+                    </p>
+                    <div id="cards-wrapper" class="flex justify-center items-center gap-2 pt-1"></div>
+                </div>
+            </div>
+
+            <!-- Pergunta com altura máxima finita e barra de scroll visível -->
+            <div class="pt-1">
+                <div class="max-h-24 overflow-y-auto mt-1 pr-2 pl-2">
+                    <h3 id="quiz-modal-question" class="text-sm font-bold text-slate-100 leading-snug">
+                        Carregando pergunta...
+                    </h3>
+                </div>
+            </div>
+
+            <!-- Quiz Options Container -->
+            <div id="quiz-modal-options" class="space-y-2 pt-1"></div>
+
+            <!-- Feedback Alert Bar -->
+            <div id="quiz-modal-feedback" class="hidden p-2.5 rounded-xl text-xs font-bold text-center"></div>
+        </div>
+    </div>
+
+    <!-- RESET MODAL -->
+    <div id="reset-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass border border-slate-700/80 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 bg-rose-500/20 text-rose-400 rounded-full flex items-center justify-center mx-auto text-xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-100">Reiniciar Progresso?</h3>
+                <p class="text-xs text-slate-400">Esta ação apagará todo o histórico de pinturas e estatísticas.</p>
+            </div>
+            <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Digite <strong class="text-rose-400">RESET</strong> para confirmar:</label>
+                <input type="text" id="reset-input-confirm" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center font-mono font-bold text-slate-100 uppercase focus:outline-none focus:border-rose-500" placeholder="RESET">
+            </div>
+            <div class="flex space-x-2">
+                <button id="reset-cancel-btn" class="flex-1 bg-slate-800 text-slate-300 font-semibold py-2.5 rounded-xl text-sm active:scale-95">Cancelar</button>
+                <button id="reset-confirm-btn" disabled class="flex-1 bg-rose-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl text-sm active:scale-95 transition">Resetar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONGRATULATIONS MODAL -->
+    <div id="complete-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass border border-sky-500/30 rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl relative overflow-hidden">
+            <canvas id="complete-art-canvas" class="w-24 h-24 bg-slate-900 border-2 border-amber-400/80 rounded-2xl mx-auto object-contain shadow-xl shadow-amber-500/20"></canvas>
+
+            <div>
+                <h2 class="text-2xl font-black text-slate-100">Parabéns!</h2>
+                <p id="complete-art-title" class="text-sm font-semibold text-sky-400 mt-1">Desenho Concluído</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 bg-slate-900/60 p-3 rounded-2xl border border-slate-800 text-xs">
+                <div>
+                    <span class="text-slate-500 block">Tempo Gasto</span>
+                    <strong id="complete-art-time" class="text-slate-200 text-sm">00:00</strong>
+                </div>
+                <div>
+                    <span class="text-slate-500 block">Precisão</span>
+                    <strong id="complete-art-acc" class="text-slate-200 text-sm">100%</strong>
+                </div>
+            </div>
+
+            <div class="space-y-2 pt-2">
+                <button id="complete-album-btn" class="w-full bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-sky-500/20 active:scale-95 transition">
+                    Ver no Álbum
+                </button>
+                <button id="complete-home-btn" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl text-xs active:scale-95 transition">
+                    Voltar ao Início
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT CORE -->
+    <script>
+        /* REGISTER SERVICE WORKER FOR PWA SUPPORT */
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch((err) => {
+                    console.error('Falha ao registrar Service Worker:', err);
+                });
+            });
+        }
+
+        /* CATEGORIES DEFINITIONS */
+        const CATEGORIES = [
+            { id: "general", name: "Conhecimentos Gerais", icon: "fa-globe" },
+            { id: "science", name: "Ciência e Natureza", icon: "fa-flask" },
+            { id: "pop", name: "Cultura Pop & Arte", icon: "fa-film" }
+        ];
+
+        /* ARTWORKS REPOSITORY WITH PER-COLOR TRIVIA QUESTIONS */
+        const ARTWORKS = [
+            {
+                id: "cat-angry-add20",
+                title: "Gatinho Irritado",
+                category: "general",
+                width: 16,
+                height: 16,
+                colorMap: {
+                    black: {
+                        hex: "#000000",
+                        label: "Preto",
+                        questions: [
+                            {
+                                question: "Qual é a capital da França?",
+                                options: ["Madri", "Londres", "Paris", "Berlim", "Roma"],
+                                correct: 2
+                            }
+                        ]
+                    },
+                    orange: {
+                        hex: "#f97316",
+                        label: "Laranja",
+                        questions: [
+                            {
+                                question: "Qual fruto é fonte famosa de Vitamina C?",
+                                options: ["Maçã", "Laranja", "Banana", "Uva", "Pêra"],
+                                correct: 1
+                            }
+                        ]
+                    },
+                    green: {
+                        hex: "#22c55e",
+                        label: "Verde",
+                        questions: [
+                            {
+                                question: "Qual animal é conhecido como o 'Rei da Selva'?",
+                                options: ["Elefante", "Tigre", "Leão", "Urso", "Guepardo"],
+                                correct: 2
+                            },
+                            {
+                                question: "Qual gás os seres humanos precisam absorver na respiração? 1",
+                                options: ["Gás Carbônico", "Nitrogênio", "Oxigênio", "Hélio", "Metano"],
+                                correct: 2
+                            }
+                        ]
+                    },
+                    bege: {
+                        hex: "#DDC9A8",
+                        label: "Bege",
+                        questions: [
+                            {
+                                question: "A mistura de quais cores primárias forma o laranja?",
+                                options: [
+                                    "Azul e Amarelo",
+                                    "Vermelho e Amarelo",
+                                    "Vermelho e Azul",
+                                    "Verde e Vermelho",
+                                    "Branco e Preto"
+                                ],
+                                correct: 1
+                            }
+                        ]
+                    },
+                    pink: {
+                        hex: "#ec4899",
+                        label: "Rosa",
+                        questions: [
+                            {
+                                question: "Qual ave é famosa pela plumagem rosa por comer camarões?",
+                                options: ["Arara", "Flamingo", "Tucano", "Pardal", "Gavião"],
+                                correct: 1
+                            }
+                        ]
+                    },
+                    white: {
+                        hex: "#ffffff",
+                        label: "Branco",
+                        questions: [
+                            {
+                                question: "Qual é o oceano mais extenso do planeta Terra?",
+                                options: [
+                                    "Oceano Atlântico",
+                                    "Oceano Índico",
+                                    "Oceano Pacífico",
+                                    "Oceano Ártico",
+                                    "Oceano Antártico"
+                                ],
+                                correct: 2
+                            }
+                        ]
+                    }
+                },
+                grid: [ 
+                    ["white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white"],
+                    ["white", "black", "black", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "black", "black", "white"],
+                    ["white", "black", "orange", "black", "white", "white", "white", "white", "white", "white", "white", "white", "black", "orange", "black", "white"],
+                    ["white", "black", "orange", "orange", "black", "black", "white", "white", "white", "white", "white", "black", "orange", "orange", "black", "white"],
+                    ["white", "black", "orange", "orange", "orange", "black", "black", "black", "black", "black", "black", "orange", "orange", "orange", "black", "white"],
+                    ["white", "black", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "black", "white"],
+                    ["black", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "black"],
+                    ["black", "orange", "orange", "black", "black", "orange", "orange", "orange", "orange", "orange", "orange", "black", "black", "orange", "orange", "black"],
+                    ["black", "orange", "orange", "black", "green", "black", "orange", "orange", "orange", "orange", "black", "green", "black", "orange", "orange", "black"],
+                    ["black", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "black"],
+                    ["black", "bege", "bege", "orange", "orange", "orange", "orange", "pink", "pink", "orange", "orange", "orange", "orange", "bege", "bege", "black"],
+                    ["black", "orange", "bege", "bege", "orange", "orange", "orange", "black", "black", "orange", "orange", "orange", "bege", "bege", "orange", "black"],
+                    ["white", "black", "orange", "orange", "orange", "orange", "black", "orange", "orange", "black", "orange", "orange", "orange", "orange", "black", "white"],
+                    ["white", "white", "black", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "black", "white", "white"],
+                    ["white", "white", "white", "black", "black", "black", "black", "black", "black", "black", "black", "black", "black", "white", "white", "white"],
+                    ["white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white"]
+                ]
+            }
+        ];
+
+        /* APPLICATION STATE */
+        const SAVE_KEY = "pixel_quiz_color_save_v2";
+
+        let gameState = {
+            progress: {},
+            lastPlayedArtId: null,
+            powerups: {
+                autorespond: 1,
+                eliminate: 1
+            },
+            powerupOpProgress: 0,
+            stats: {
+                totalTimeSeconds: 0,
+                totalClicks: 0,
+                correctClicks: 0,
+                totalErrors: 0,
+                solvedEquations: 0,
+                powerupsUsed: 0
+            },
+            settings: {
+                sound: true,
+                music: true,
+                vibration: true,
+                colorAnimation: true
+            }
+        };
+
+        /* AUDIO SYSTEM WITH MP3 FILES */
+        const mp3AudioCache = {};
+
+        // Mapeamento de arquivos MP3 do jogo
+        const MP3_FILES = {
+            pop: 'audio/pop.mp3',
+            powerup: 'audio/powerup.mp3',
+            card: 'audio/card.mp3',
+            error: 'audio/error.mp3',
+            win: 'audio/win.mp3',
+            bg_music: 'audio/bg_music.mp3'
+        };
+
+        // Elemento de áudio da música de fundo contínua nos níveis
+        const bgMusicAudio = new Audio();
+        bgMusicAudio.loop = true;
+        bgMusicAudio.volume = 0.35;
+        bgMusicAudio.src = MP3_FILES.bg_music;
+
+        function loadSaveData() {
+            try {
+                const raw = localStorage.getItem(SAVE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    gameState = { ...gameState, ...parsed };
+                    if (!gameState.progress) gameState.progress = {};
+                    if (!gameState.powerups) gameState.powerups = { autorespond: 1, eliminate: 1 };
+                    if (gameState.powerups.autorespond === undefined) gameState.powerups.autorespond = 1;
+                    if (gameState.powerups.eliminate === undefined) gameState.powerups.eliminate = 1;
+                    if (gameState.powerupOpProgress === undefined) gameState.powerupOpProgress = 0;
+                    if (!gameState.stats) gameState.stats = { totalTimeSeconds: 0, totalClicks: 0, correctClicks: 0, totalErrors: 0, solvedEquations: 0, powerupsUsed: 0 };
+                    if (!gameState.settings) gameState.settings = { sound: true, music: true, vibration: true, colorAnimation: true };
+                    if (gameState.settings.music === undefined) gameState.settings.music = true;
+                }
+            } catch (e) {
+                console.error("Erro ao carregar dados:", e);
+            }
+        }
+
+        function saveGameData() {
+            try {
+                localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
+            } catch (e) {
+                console.error("Erro ao salvar dados:", e);
+            }
+        }
+
+        function triggerEmptyPowerupEffect(type) {
+            const titleEl = document.getElementById('toast-powerup-title');
+            if (titleEl) {
+                if (type === 'eliminate') {
+                    titleEl.innerText = "Sem Power-up de Eliminar";
+                } else if (type === 'auto') {
+                    titleEl.innerText = "Sem Power-up Auto";
+                } else {
+                    titleEl.innerText = "Sem Power-ups!";
+                }
+            }
+
+            const needed = 10 - (gameState.powerupOpProgress || 0);
+            const neededEl = document.getElementById('toast-powerup-needed');
+
+            if (neededEl) {
+                if (needed === 1) {
+                    neededEl.innerText = `Falta ${needed} acerto para ganhar o próximo power-up. Continue jogando.`;
+                } else {
+                    neededEl.innerText = `Faltam ${needed} acertos para ganhar o próximo power-up. Continue jogando.`;
+                }
+            }
+
+            document.body.classList.remove('animate-shake-screen');
+            void document.body.offsetWidth;
+            document.body.classList.add('animate-shake-screen');
+
+            playSound('error');
+            triggerVibration();
+
+            const toast = document.getElementById('toast-powerup-empty');
+            toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-6');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            if (window.emptyPowerupToastTimer) clearTimeout(window.emptyPowerupToastTimer);
+            window.emptyPowerupToastTimer = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-6');
+            }, 3000);
+        }
+
+        /* REPRODUÇÃO DE SONS MP3 */
+        function playSound(type) {
+            if (!gameState.settings.sound) return;
+            const src = MP3_FILES[type];
+            if (!src) return;
+
+            try {
+                // Instancia novo objeto para permitir sons simultâneos rápidos
+                const audio = new Audio(src);
+                audio.volume = 0.8;
+                audio.play().catch(e => {
+                    // Trata silenciamento do navegador antes do primeiro clique do usuário
+                });
+            } catch (e) {
+                console.warn("Erro ao tocar áudio MP3:", e);
+            }
+        }
+
+        /* GERENCIAMENTO DA MÚSICA DE FUNDO NO LEVEL */
+        function updateLevelMusicState() {
+            const musicBtn = document.getElementById('game-music-btn');
+            const musicIcon = document.getElementById('game-music-icon');
+
+            if (gameState.settings.music) {
+                if (musicBtn) {
+                    musicBtn.classList.remove('text-slate-500', 'line-through');
+                    musicBtn.classList.add('text-purple-400');
+                }
+                if (musicIcon) {
+                    musicIcon.className = "fa-solid fa-music text-xs";
+                }
+                // Se estiver na tela de gameplay, toca a música
+                const canvasSec = document.getElementById('sec-canvas-game');
+                if (canvasSec && !canvasSec.classList.contains('hidden')) {
+                    bgMusicAudio.play().catch(e => {});
+                }
+            } else {
+                if (musicBtn) {
+                    musicBtn.classList.remove('text-purple-400');
+                    musicBtn.classList.add('text-slate-500');
+                }
+                if (musicIcon) {
+                    musicIcon.className = "fa-solid fa-volume-xmark text-xs";
+                }
+                bgMusicAudio.pause();
+            }
+        }
+
+        function stopLevelMusic() {
+            bgMusicAudio.pause();
+            bgMusicAudio.currentTime = 0;
+        }
+
+        function triggerVibration() {
+            if (gameState.settings.vibration && navigator.vibrate) {
+                navigator.vibrate(20);
+            }
+        }
+
+        /* CANVAS ENGINE & CONTROLLER */
+        let currentArt = null;
+        let selectedColorKey = null;
+        let scale = 20;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let playTimerInterval = null;
+        let isPaintingAnimating = false;
+
+        const canvas = document.getElementById('paint-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+
+        // Retorna a lista ordenada de pixels de uma determinada cor na grade
+        function getColorPixelsList(colorKey) {
+            if (!currentArt) return [];
+            const pixels = [];
+            for (let r = 0; r < currentArt.height; r++) {
+                for (let c = 0; c < currentArt.width; c++) {
+                    if (currentArt.grid[r][c] === colorKey) {
+                        pixels.push({ c, r, posKey: `${c},${r}` });
+                    }
+                }
+            }
+            return pixels;
+        }
+
+        function startPainting(artId) {
+            currentArt = ARTWORKS.find(a => a.id === artId);
+            if (!currentArt) return;
+
+            if (!gameState.progress[artId]) {
+                gameState.progress[artId] = {
+                    paintedPixels: {},
+                    completed: false,
+                    timeSpent: 0,
+                    completedCount: 0,
+                    answeredQuestions: {}
+                };
+            }
+            if (!gameState.progress[artId].answeredQuestions) {
+                gameState.progress[artId].answeredQuestions = {};
+            }
+
+            gameState.lastPlayedArtId = artId;
+            saveGameData();
+
+            document.getElementById('game-drawing-title').innerText = currentArt.title;
+            const cat = CATEGORIES.find(c => c.id === currentArt.category);
+            document.getElementById('game-category-tag').innerText = cat ? cat.name : "Quiz";
+
+            showSection('sec-canvas-game');
+
+            scale = Math.min(
+                Math.floor((container.clientWidth * 0.8) / currentArt.width),
+                Math.floor((container.clientHeight * 0.8) / currentArt.height)
+            );
+            scale = Math.max(scale, 20);
+            
+            panX = (container.clientWidth - currentArt.width * scale) / 2;
+            panY = (container.clientHeight - currentArt.height * scale) / 2;
+
+            selectedColorKey = Object.keys(currentArt.colorMap)[0];
+            refreshPalette();
+            updatePowerUpUI();
+            renderCanvas();
+            startTimer();
+            updateLevelMusicState();
+        }
+
+        function updatePowerUpUI() {
+            document.getElementById('home-autorespond-count').innerText = gameState.powerups.autorespond;
+            document.getElementById('home-eliminate-count').innerText = gameState.powerups.eliminate;
+            document.getElementById('powerup-badge-autorespond').innerText = gameState.powerups.autorespond;
+            document.getElementById('powerup-badge-eliminate').innerText = gameState.powerups.eliminate;
+            
+            const pct = Math.floor((gameState.powerupOpProgress / 10) * 100);
+            document.getElementById('home-powerup-progress-text').innerText = `${gameState.powerupOpProgress} / 10 acertos`;
+            document.getElementById('home-powerup-progress-bar').style.width = `${pct}%`;
+        }
+
+        function refreshPalette() {
+            if (!currentArt) return;
+            const artProg = gameState.progress[currentArt.id];
+            const remainingCounts = {};
+
+            Object.keys(currentArt.colorMap).forEach(key => {
+                remainingCounts[key] = 0;
+            });
+
+            for (let r = 0; r < currentArt.height; r++) {
+                for (let c = 0; c < currentArt.width; c++) {
+                    const colorKey = currentArt.grid[r][c];
+                    const posKey = `${c},${r}`;
+
+                    if (!artProg.paintedPixels[posKey]) {
+                        if (remainingCounts[colorKey] !== undefined) {
+                            remainingCounts[colorKey]++;
+                        }
+                    }
+                }
+            }
+
+            const paletteContainer = document.getElementById('color-palette-container');
+            paletteContainer.innerHTML = '';
+
+            const availableKeys = Object.keys(currentArt.colorMap).filter(k => remainingCounts[k] > 0);
+
+            if (availableKeys.length === 0) {
+                paletteContainer.innerHTML = `<span class="text-xs text-emerald-400 font-bold px-4 py-2"><i class="fa-solid fa-check-circle mr-1"></i> Todos os quadros foram pintados!</span>`;
+                checkCompletion();
+                return;
+            }
+
+            if (!selectedColorKey || remainingCounts[selectedColorKey] === 0) {
+                selectedColorKey = availableKeys[0];
+            }
+
+            Object.entries(currentArt.colorMap).forEach(([colorKey, colorDef]) => {
+                const count = remainingCounts[colorKey] || 0;
+                if (count === 0 && selectedColorKey !== colorKey) return;
+
+                const pill = document.createElement('button');
+
+                pill.className = `flex-shrink-0 flex items-center space-x-2 px-3.5 py-2 rounded-2xl border border-slate-700/80 bg-slate-900/90 text-xs font-bold transition-all active:scale-95 shadow-md`;
+                
+                pill.innerHTML = `
+                    <div class="w-5 h-5 rounded-full shadow-inner border border-black/30 shrink-0" style="background-color: ${colorDef.hex}"></div>
+                    <div class="flex flex-col text-left">
+                        <span class="text-[11px] text-slate-100 font-extrabold leading-none">${colorDef.label}</span>
+                    </div>
+                    <span id="pill-count-${colorKey}" class="text-[10px] font-bold bg-slate-800 px-1.5 py-0.5 rounded-md border border-slate-700 text-slate-300 ml-1">${count}</span>
+                `;
+
+                pill.onclick = () => {
+                    if (isPaintingAnimating) return;
+                    selectedColorKey = colorKey;
+                    refreshPalette();
+                    updateActiveBadge();
+                    renderCanvas();
+                    triggerVibration();
+                    openQuizModalForColor(colorKey);
+                };
+
+                paletteContainer.appendChild(pill);
+            });
+
+            updateActiveBadge();
+            updateProgressText();
+        }
+
+        function updateActiveBadge() {
+            if (!currentArt || !selectedColorKey) return;
+            const colorDef = currentArt.colorMap[selectedColorKey];
+            if (!colorDef) return;
+        }
+
+        function updateProgressText() {
+            let total = currentArt.width * currentArt.height;
+            let painted = Object.keys(gameState.progress[currentArt.id].paintedPixels).length;
+
+            const percent = Math.floor((painted / total) * 100);
+            document.getElementById('game-progress-text').innerText = `${percent}%`;
+        }
+
+        function renderCanvas() {
+            if (!currentArt) return;
+
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.imageSmoothingEnabled = false;
+
+            const artProg = gameState.progress[currentArt.id];
+
+            for (let r = 0; r < currentArt.height; r++) {
+                for (let c = 0; c < currentArt.width; c++) {
+                    const x = panX + c * scale;
+                    const y = panY + r * scale;
+
+                    if (x + scale < 0 || x > canvas.width || y + scale < 0 || y > canvas.height) continue;
+
+                    const colorKey = currentArt.grid[r][c];
+                    const key = `${c},${r}`;
+                    const paintedColorKey = artProg.paintedPixels[key];
+
+                    if (paintedColorKey) {
+                        const colorDef = currentArt.colorMap[paintedColorKey];
+                        ctx.fillStyle = colorDef ? colorDef.hex : "#FFFFFF";
+                        ctx.fillRect(x, y, scale, scale);
+                        ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
+                        ctx.strokeRect(x, y, scale, scale);
+                    } else {
+                        ctx.fillStyle = "#1e293b";
+                        ctx.fillRect(x, y, scale, scale);
+                        ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+                        ctx.strokeRect(x, y, scale, scale);
+                    }
+                }
+            }
+        }
+
+        /* QUIZ MODAL & MULTI-QUESTION NAVIGATION LOGIC */
+        let currentQuestionObj = null;
+        let quizTriggerMode = 'color';
+        let activeQuestionsList = [];
+        let activeQuestionIndex = 0;
+
+        function openQuizModalForColor(colorKey, targetPixelQuestionIndex = null) {
+            const colorDef = currentArt.colorMap[colorKey];
+            if (!colorDef || !colorDef.questions || colorDef.questions.length === 0) return;
+
+            activeQuestionsList = colorDef.questions;
+
+            document.getElementById('quiz-modal-color-dot').style.backgroundColor = colorDef.hex;
+            document.getElementById('quiz-modal-color-name').innerText = colorDef.label;
+
+            const navContainer = document.getElementById('quiz-modal-nav-container');
+
+            if (targetPixelQuestionIndex !== null) {
+                // Disparado pelo clique num pixel individual no Canvas
+                quizTriggerMode = 'pixel';
+                activeQuestionIndex = targetPixelQuestionIndex % activeQuestionsList.length;
+
+                // Se houver mais de 1 pergunta na cor, exibe a barra de navegação com "Pergunta y de x"
+                if (activeQuestionsList.length > 1) {
+                    navContainer.classList.remove('hidden');
+                    navContainer.classList.add('flex');
+                } else {
+                    navContainer.classList.add('hidden');
+                    navContainer.classList.remove('flex');
+                }
+            } else {
+                // Disparado pelo clique na cor na barra inferior (Paleta)
+                quizTriggerMode = 'color';
+                activeQuestionIndex = 0;
+                if (activeQuestionsList.length > 1) {
+                    navContainer.classList.remove('hidden');
+                    navContainer.classList.add('flex');
+                } else {
+                    navContainer.classList.add('hidden');
+                    navContainer.classList.remove('flex');
+                }
+            }
+
+            renderQuestionInModal();
+            const quizModal = document.getElementById('quiz-modal');
+            quizModal.classList.remove('hidden');
+
+            quizModal.classList.add('pointer-events-none');
+            setTimeout(() => {
+                quizModal.classList.remove('pointer-events-none');
+            }, 200);
+        }
+
+        function renderQuestionInModal() {
+            currentQuestionObj = activeQuestionsList[activeQuestionIndex];
+
+            const artProg = gameState.progress[currentArt.id];
+            const answeredMap = artProg.answeredQuestions[selectedColorKey] || {};
+            const isAlreadyAnswered = !!answeredMap[activeQuestionIndex];
+
+            // Atualiza indicadores de navegação por seta
+            if (activeQuestionsList.length > 1) {
+                document.getElementById('quiz-nav-indicator').innerText = `Pergunta ${activeQuestionIndex + 1} de ${activeQuestionsList.length}`;
+                document.getElementById('quiz-nav-prev').disabled = (activeQuestionIndex === 0);
+                document.getElementById('quiz-nav-next').disabled = (activeQuestionIndex === activeQuestionsList.length - 1);
+            }
+
+            document.getElementById('quiz-modal-question').innerText = currentQuestionObj.question;
+
+            const optionsContainer = document.getElementById('quiz-modal-options');
+            optionsContainer.innerHTML = '';
+            
+            document.getElementById('card-draw-container').classList.add('hidden');
+            const feedbackEl = document.getElementById('quiz-modal-feedback');
+            feedbackEl.className = "hidden p-3 rounded-xl text-xs font-bold text-center";
+
+            const letters = ['A', 'B', 'C', 'D', 'E'];
+
+            currentQuestionObj.options.forEach((optText, index) => {
+                const btn = document.createElement('button');
+                btn.id = `quiz-option-btn-${index}`;
+                
+                if (isAlreadyAnswered) {
+                    if (index === currentQuestionObj.correct) {
+                        btn.className = "w-full text-left bg-emerald-950/80 border-2 border-emerald-500 text-emerald-200 p-3 rounded-xl text-xs font-bold flex items-center justify-between shadow-lg";
+                        btn.innerHTML = `
+                            <div class="flex items-center space-x-3">
+                                <span class="w-6 h-6 rounded-lg bg-emerald-800 border border-emerald-500 flex items-center justify-center font-bold text-emerald-100 shrink-0 text-[11px]">${letters[index]}</span>
+                                <span class="flex-1 leading-snug">${optText}</span>
+                            </div>
+                            <span class="text-[10px] bg-emerald-500 text-slate-950 font-black px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1 shrink-0"><i class="fa-solid fa-check"></i> Correta</span>
+                        `;
+                    } else {
+                        btn.className = "w-full text-left bg-slate-900/50 border border-slate-800 text-slate-500 p-3 rounded-xl text-xs font-medium flex items-center space-x-3 opacity-60";
+                        btn.innerHTML = `
+                            <span class="w-6 h-6 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center font-bold text-slate-600 shrink-0 text-[11px]">${letters[index]}</span>
+                            <span class="flex-1 leading-snug">${optText}</span>
+                        `;
+                    }
+                    btn.disabled = true;
+                } else {
+                    btn.className = "w-full text-left bg-slate-800/90 border border-slate-700 text-slate-200 p-3 rounded-xl text-xs font-medium flex items-center space-x-3 transition hover:bg-slate-700/90 active:scale-[0.98]";
+                    btn.innerHTML = `
+                        <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center font-bold text-sky-400 shrink-0 text-[11px]">${letters[index]}</span>
+                        <span class="flex-1 leading-snug">${optText}</span>
+                    `;
+                    btn.onclick = () => handleQuizAnswer(index);
+                }
+
+                optionsContainer.appendChild(btn);
+            });
+
+            const autoBtn = document.getElementById('powerup-btn-autorespond');
+            const elimBtn = document.getElementById('powerup-btn-eliminate');
+
+            if (isAlreadyAnswered) {
+                feedbackEl.className = "p-3 rounded-xl text-xs font-bold text-center bg-sky-500/20 text-sky-300 border border-sky-500/40";
+                feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Esta pergunta já foi respondida com sucesso!`;
+                feedbackEl.classList.remove('hidden');
+                autoBtn.disabled = true;
+                elimBtn.disabled = true;
+                autoBtn.classList.add('opacity-50', 'pointer-events-none');
+                elimBtn.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                autoBtn.disabled = false;
+                elimBtn.disabled = false;
+                autoBtn.classList.remove('opacity-50', 'pointer-events-none');
+                elimBtn.classList.remove('opacity-50', 'pointer-events-none');
+            }
+
+            updatePowerUpUI();
+        }
+
+        /* Handlers das Setas de Navegação */
+        document.getElementById('quiz-nav-prev').onclick = () => {
+            if (activeQuestionIndex > 0) {
+                activeQuestionIndex--;
+                playSound('pop');
+                triggerVibration();
+                renderQuestionInModal();
+            }
+        };
+
+        document.getElementById('quiz-nav-next').onclick = () => {
+            if (activeQuestionIndex < activeQuestionsList.length - 1) {
+                activeQuestionIndex++;
+                playSound('pop');
+                triggerVibration();
+                renderQuestionInModal();
+            }
+        };
+
+        /* POWERUP: AUTORESPOND */
+        document.getElementById('powerup-btn-autorespond').onclick = () => {
+            if (gameState.powerups.autorespond <= 0) {
+                triggerEmptyPowerupEffect('auto');
+                return;
+            }
+
+            gameState.powerups.autorespond--;
+            gameState.stats.powerupsUsed = (gameState.stats.powerupsUsed || 0) + 1;
+            saveGameData();
+            updatePowerUpUI();
+
+            const correctIdx = currentQuestionObj.correct;
+            const targetBtn = document.getElementById(`quiz-option-btn-${correctIdx}`);
+            if (targetBtn) {
+                targetBtn.classList.add('autorespond-glow', 'border-emerald-400', 'bg-emerald-950/80');
+            }
+
+            playSound('powerup');
+            triggerVibration();
+
+            setTimeout(() => {
+                handleQuizAnswer(correctIdx);
+            }, 600);
+        };
+
+        /* POWERUP: ELIMINATE WRONG OPTIONS (WITH CARD DRAW) */
+        document.getElementById('powerup-btn-eliminate').onclick = () => {
+            if (gameState.powerups.eliminate <= 0) {
+                triggerEmptyPowerupEffect('eliminate');
+                return;
+            }
+
+            const drawContainer = document.getElementById('card-draw-container');
+            if (!drawContainer.classList.contains('hidden')) return;
+
+            const totalOptions = currentQuestionObj.options.length;
+            const wrongCount = totalOptions - 1;
+
+            const cardsWrapper = document.getElementById('cards-wrapper');
+            cardsWrapper.innerHTML = '';
+
+            let possibleValues = [];
+            for (let i = 1; i <= wrongCount; i++) {
+                possibleValues.push(i);
+            }
+            possibleValues.sort(() => Math.random() - 0.5);
+
+            possibleValues.forEach((val) => {
+                const card = document.createElement('div');
+                card.className = "w-14 h-20 perspective-1000 cursor-pointer active:scale-95 transition";
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front bg-gradient-to-tr from-indigo-600 to-sky-500 border-2 border-indigo-300 flex items-center justify-center text-white shadow-md">
+                            <i class="fa-solid fa-question text-lg font-black"></i>
+                        </div>
+                        <div class="card-back bg-slate-800 border-2 border-indigo-400 flex flex-col items-center justify-center text-indigo-300 shadow-md">
+                            <span class="text-xs font-bold">Eliminar</span>
+                            <span class="text-lg font-black text-white">${val}</span>
+                        </div>
+                    </div>
+                `;
+
+                card.onclick = () => {
+                    playSound('card');
+                    triggerVibration();
+
+                    const inner = card.querySelector('.card-inner');
+                    inner.classList.add('flipped');
+
+                    gameState.powerups.eliminate--;
+                    gameState.stats.powerupsUsed = (gameState.stats.powerupsUsed || 0) + 1;
+                    saveGameData();
+                    updatePowerUpUI();
+
+                    setTimeout(() => {
+                        executeOptionElimination(val);
+                        drawContainer.classList.add('hidden');
+                    }, 800);
+                };
+
+                cardsWrapper.appendChild(card);
+            });
+
+            drawContainer.classList.remove('hidden');
+        };
+
+        function executeOptionElimination(numberToEliminate) {
+            const correctIdx = currentQuestionObj.correct;
+            const wrongIndices = [];
+
+            currentQuestionObj.options.forEach((_, idx) => {
+                if (idx !== correctIdx) {
+                    const btn = document.getElementById(`quiz-option-btn-${idx}`);
+                    if (btn && !btn.classList.contains('animate-eliminate')) {
+                        wrongIndices.push(idx);
+                    }
+                }
+            });
+
+            wrongIndices.sort(() => Math.random() - 0.5);
+            const toRemove = wrongIndices.slice(0, numberToEliminate);
+
+            toRemove.forEach(idx => {
+                const btn = document.getElementById(`quiz-option-btn-${idx}`);
+                if (btn) {
+                    btn.classList.add('animate-eliminate');
+                    btn.disabled = true;
+                }
+            });
+
+            const feedbackEl = document.getElementById('quiz-modal-feedback');
+            feedbackEl.className = "p-2.5 rounded-xl text-xs font-bold text-center bg-indigo-500/20 text-indigo-300 border border-indigo-500/40";
+            feedbackEl.innerHTML = `<i class="fa-solid fa-eye-slash mr-1"></i> ${toRemove.length} alternativa(s) errada(s) eliminada(s)!`;
+            feedbackEl.classList.remove('hidden');
+        }
+
+        function handleQuizAnswer(selectedIndex) {
+            if (!currentQuestionObj) return;
+
+            const isCorrect = (selectedIndex === currentQuestionObj.correct);
+            const feedbackEl = document.getElementById('quiz-modal-feedback');
+            gameState.stats.totalClicks++;
+
+            if (isCorrect) {
+                gameState.stats.correctClicks++;
+                gameState.stats.solvedEquations++;
+
+                // Registra esta pergunta específica da cor como respondida
+                const artProg = gameState.progress[currentArt.id];
+                if (!artProg.answeredQuestions[selectedColorKey]) {
+                    artProg.answeredQuestions[selectedColorKey] = {};
+                }
+                artProg.answeredQuestions[selectedColorKey][activeQuestionIndex] = true;
+
+                gameState.powerupOpProgress++;
+                if (gameState.powerupOpProgress >= 10) {
+                    if (Math.random() > 0.5) {
+                        gameState.powerups.autorespond++;
+                    } else {
+                        gameState.powerups.eliminate++;
+                    }
+                    gameState.powerupOpProgress = 0;
+                    playSound('powerup');
+                }
+
+                playSound('pop');
+                triggerVibration();
+
+                feedbackEl.className = "p-3 rounded-xl text-xs font-bold text-center bg-emerald-500/20 text-emerald-400 border border-emerald-500/40";
+                feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Resposta Correta! Colorindo pixel...`;
+                feedbackEl.classList.remove('hidden');
+
+                setTimeout(() => {
+                    document.getElementById('quiz-modal').classList.add('hidden');
+                    
+                    const totalQuestionsForColor = (currentArt.colorMap[selectedColorKey].questions || []).length;
+
+                    // Se tiver apenas 1 pergunta para essa cor, dispara a animação gradual da cor inteira
+                    if (totalQuestionsForColor === 1) {
+                        paintColorPixels(selectedColorKey);
+                    } else {
+                        paintSpecificQuestionPixel(selectedColorKey, activeQuestionIndex);
+                        refreshPalette();
+                        updatePowerUpUI();
+                    }
+                }, 600);
+
+            } else {
+                gameState.stats.totalErrors++;
+                feedbackEl.className = "p-3 rounded-xl text-xs font-bold text-center bg-rose-500/20 text-rose-400 border border-rose-500/40";
+                feedbackEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> Você errou! Tente novamente.`;
+                feedbackEl.classList.remove('hidden');
+
+                playSound('error');
+                triggerVibration();
+                saveGameData();
+            }
+        }
+
+        function paintSpecificQuestionPixel(colorKey, questionIdx) {
+            if (!currentArt || !colorKey) return;
+            const artProg = gameState.progress[currentArt.id];
+            const allColorPixels = getColorPixelsList(colorKey);
+
+            if (allColorPixels.length === 0) return;
+
+            // Determina quais pixels pertencem a esta pergunta dividindo em blocos iguais
+            const totalQuestions = (currentArt.colorMap[colorKey].questions || []).length;
+            const pixelsPerQuestion = Math.ceil(allColorPixels.length / totalQuestions);
+            
+            const startIdx = questionIdx * pixelsPerQuestion;
+            const endIdx = Math.min(startIdx + pixelsPerQuestion, allColorPixels.length);
+
+            const targetPixels = allColorPixels.slice(startIdx, endIdx);
+
+            targetPixels.forEach(pixel => {
+                artProg.paintedPixels[pixel.posKey] = colorKey;
+            });
+
+            saveGameData();
+            renderCanvas();
+            refreshPalette();
+            updatePowerUpUI();
+        }
+
+        document.getElementById('quiz-modal-close-btn').onclick = () => {
+            document.getElementById('quiz-modal').classList.add('hidden');
+        };
+
+        /* Touch & Pan Controls */
+        let pointerDown = false;
+        let activePointers = new Map();
+
+        container.addEventListener('pointerdown', (e) => {
+            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            pointerDown = true;
+            isDragging = false;
+            dragStartX = e.clientX - panX;
+            dragStartY = e.clientY - panY;
+            if (e.pointerType === 'touch') e.preventDefault();
+        });
+
+        container.addEventListener('pointermove', (e) => {
+            if (!activePointers.has(e.pointerId)) return;
+            const startPos = activePointers.get(e.pointerId);
+
+            if (Math.hypot(e.clientX - startPos.x, e.clientY - startPos.y) > 8) {
+                isDragging = true;
+            }
+
+            if (pointerDown && isDragging && activePointers.size === 1) {
+                panX = e.clientX - dragStartX;
+                panY = e.clientY - dragStartY;
+                renderCanvas();
+            }
+        });
+
+        const handlePointerUpOrCancel = (e) => {
+            const startPos = activePointers.get(e.pointerId);
+            activePointers.delete(e.pointerId);
+
+            if (activePointers.size === 0) pointerDown = false;
+
+            if (e.target !== canvas) return;
+
+            if (!isDragging && startPos) {
+                handleCanvasClick(startPos.x, startPos.y);
+            }
+        };
+
+        container.addEventListener('pointerup', handlePointerUpOrCancel);
+        container.addEventListener('pointercancel', handlePointerUpOrCancel);
+
+        function handleCanvasClick(clientX, clientY) {
+            if (!currentArt || isPaintingAnimating) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            const col = Math.floor((x - panX) / scale);
+            const row = Math.floor((y - panY) / scale);
+
+            if (col < 0 || col >= currentArt.width || row < 0 || row >= currentArt.height) return;
+
+            const clickedColor = currentArt.grid[row][col];
+            const allColorPixels = getColorPixelsList(clickedColor);
+            
+            // Descobre o índice da pergunta associada a este pixel específico
+            const pixelSubIndex = allColorPixels.findIndex(p => p.c === col && p.r === row);
+            const totalQuestions = (currentArt.colorMap[clickedColor].questions || []).length;
+            const pixelsPerQuestion = Math.ceil(allColorPixels.length / totalQuestions);
+            
+            const targetQuestionIndex = pixelSubIndex !== -1 ? Math.floor(pixelSubIndex / pixelsPerQuestion) : 0;
+
+            selectedColorKey = clickedColor;
+            refreshPalette();
+            openQuizModalForColor(clickedColor, targetQuestionIndex);
+        }
+
+        function startTimer() {
+            clearInterval(playTimerInterval);
+            playTimerInterval = setInterval(() => {
+                if (currentArt && gameState.progress[currentArt.id] && !gameState.progress[currentArt.id].completed) {
+                    gameState.progress[currentArt.id].timeSpent++;
+                    gameState.stats.totalTimeSeconds++;
+
+                    const sec = gameState.progress[currentArt.id].timeSpent;
+                    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+                    const s = (sec % 60).toString().padStart(2, '0');
+                    document.getElementById('game-timer').innerText = `${m}:${s}`;
+
+                    if (sec % 5 === 0) saveGameData();
+                }
+            }, 1000);
+        }
+
+        function checkCompletion() {
+            const artProg = gameState.progress[currentArt.id];
+            if (artProg.completed) return;
+
+            artProg.completed = true;
+            artProg.completedCount = (artProg.completedCount || 0) + 1;
+            saveGameData();
+
+            playSound('win');
+            confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+
+            renderThumbnail(document.getElementById('complete-art-canvas'), currentArt);
+
+            document.getElementById('complete-art-title').innerText = currentArt.title;
+            const sec = artProg.timeSpent;
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            document.getElementById('complete-art-time').innerText = `${m}m ${s}s`;
+
+            const acc = gameState.stats.totalClicks > 0 ? Math.round((gameState.stats.correctClicks / gameState.stats.totalClicks) * 100) : 100;
+            document.getElementById('complete-art-acc').innerText = `${acc}%`;
+
+            document.getElementById('complete-modal').classList.remove('hidden');
+        }
+
+        /* Zoom Buttons */
+        document.getElementById('btn-zoom-in').onclick = () => { scale = Math.min(80, scale * 1.25); renderCanvas(); };
+        document.getElementById('btn-zoom-out').onclick = () => { scale = Math.max(10, scale * 0.8); renderCanvas(); };
+        document.getElementById('btn-zoom-reset').onclick = () => {
+            if (currentArt) {
+                scale = Math.min(
+                    Math.floor((container.clientWidth * 0.8) / currentArt.width),
+                    Math.floor((container.clientHeight * 0.8) / currentArt.height)
+                );
+                scale = Math.max(scale, 20);
+                panX = (container.clientWidth - currentArt.width * scale) / 2;
+                panY = (container.clientHeight - currentArt.height * scale) / 2;
+                renderCanvas();
+            }
+        };
+
+        /* Level Music Button inside Gameplay */
+        document.getElementById('game-music-btn').onclick = () => {
+            gameState.settings.music = !gameState.settings.music;
+            document.getElementById('setting-music').checked = gameState.settings.music;
+            saveGameData();
+            updateLevelMusicState();
+            triggerVibration();
+        };
+
+        document.getElementById('game-back-btn').onclick = () => {
+            clearInterval(playTimerInterval);
+            stopLevelMusic();
+            showSection('sec-home');
+        };
+
+        /* THUMBNAIL RENDERER */
+        function renderThumbnail(canvasEl, artwork) {
+            if (!canvasEl || !artwork) return;
+            const tCtx = canvasEl.getContext('2d');
+            canvasEl.width = artwork.width * 6;
+            canvasEl.height = artwork.height * 6;
+
+            tCtx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+            const artProg = gameState.progress[artwork.id];
+
+            for (let r = 0; r < artwork.height; r++) {
+                for (let c = 0; c < artwork.width; c++) {
+                    const posKey = `${c},${r}`;
+                    const paintedColorKey = artProg ? artProg.paintedPixels[posKey] : null;
+
+                    if (paintedColorKey) {
+                        const colorDef = artwork.colorMap[paintedColorKey];
+                        tCtx.fillStyle = colorDef ? colorDef.hex : "#FFFFFF";
+                    } else {
+                        tCtx.fillStyle = "#334155";
+                    }
+                    tCtx.fillRect(c * 6, r * 6, 6, 6);
+                }
+            }
+        }
+
+        /* SPA NAVIGATION & VIEWS */
+        function showSection(sectionId) {
+            document.querySelectorAll('.spa-section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(sectionId).classList.remove('hidden');
+
+            const bottomNav = document.getElementById('bottom-nav');
+            if (sectionId === 'sec-canvas-game') {
+                bottomNav.classList.add('hidden');
+            } else {
+                bottomNav.classList.remove('hidden');
+                stopLevelMusic();
+            }
+
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.getAttribute('data-target') === sectionId);
+            });
+
+            if (sectionId === 'sec-home') updateHomeDashboard();
+            if (sectionId === 'sec-categories') renderCategoriesView();
+            if (sectionId === 'sec-album') renderAlbumView();
+        }
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.onclick = () => showSection(item.getAttribute('data-target'));
+        });
+
+        function updateHomeDashboard() {
+            let totalCompleted = 0;
+            let totalSolvedEquations = gameState.stats.solvedEquations || 0;
+
+            Object.keys(gameState.progress).forEach(artId => {
+                if (gameState.progress[artId].completed) totalCompleted++;
+            });
+
+            document.getElementById('stat-completed-count').innerText = totalCompleted;
+            document.getElementById('stat-total-equations').innerText = totalSolvedEquations;
+
+            const sec = gameState.stats.totalTimeSeconds || 0;
+            const hrs = Math.floor(sec / 3600);
+            const mins = Math.floor((sec % 3600) / 60);
+            const secs = sec % 60;
+            document.getElementById('stat-total-time').innerText = `${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+
+            const acc = gameState.stats.totalClicks > 0 ? Math.round((gameState.stats.correctClicks / gameState.stats.totalClicks) * 100) : 100;
+            document.getElementById('stat-accuracy').innerText = `${acc}%`;
+            document.getElementById('stat-total-errors').innerText = gameState.stats.totalErrors || 0;
+            document.getElementById('stat-powerups-used').innerText = gameState.stats.powerupsUsed || 0;
+
+            updatePowerUpUI();
+
+            const level = Math.floor(totalSolvedEquations / 5) + 1;
+            document.getElementById('home-user-lvl').innerText = `Nível ${level}`;
+
+            const totalGamePixels = ARTWORKS.reduce((sum, art) => sum + art.width * art.height, 0);
+            let totalPainted = 0;
+            Object.values(gameState.progress).forEach(p => {
+                totalPainted += Object.keys(p.paintedPixels || {}).length;
+            });
+
+            const gameProgPercent = totalGamePixels > 0 ? Math.floor((totalPainted / totalGamePixels) * 100) : 0;
+            document.getElementById('stat-game-progress').innerText = `${gameProgPercent}%`;
+            document.getElementById('stat-game-progress-bar').style.width = `${gameProgPercent}%`;
+
+            const resumeCard = document.getElementById('home-resume-card');
+            if (gameState.lastPlayedArtId) {
+                const lastArt = ARTWORKS.find(a => a.id === gameState.lastPlayedArtId);
+                const prog = gameState.progress[gameState.lastPlayedArtId];
+                if (lastArt && prog && !prog.completed) {
+                    resumeCard.classList.remove('hidden');
+                    document.getElementById('home-resume-title').innerText = lastArt.title;
+                    const painted = Object.keys(prog.paintedPixels).length;
+                    const total = lastArt.width * lastArt.height;
+                    const pct = Math.floor((painted / total) * 100);
+                    document.getElementById('home-resume-bar').style.width = `${pct}%`;
+                    document.getElementById('home-resume-percent').innerText = `${pct}% concluído`;
+                    renderThumbnail(document.getElementById('home-resume-canvas'), lastArt);
+
+                    document.getElementById('home-resume-btn').onclick = () => startPainting(lastArt.id);
+                } else {
+                    resumeCard.classList.add('hidden');
+                }
+            } else {
+                resumeCard.classList.add('hidden');
+            }
+        }
+
+        function renderCategoriesView() {
+            const grid = document.getElementById('categories-grid');
+            grid.innerHTML = '';
+
+            CATEGORIES.forEach(cat => {
+                const catArts = ARTWORKS.filter(a => a.category === cat.id);
+                const completedInCat = catArts.filter(a => gameState.progress[a.id] && gameState.progress[a.id].completed).length;
+                const firstArt = catArts[0];
+
+                const card = document.createElement('div');
+                card.className = "glass rounded-2xl p-4 flex items-center space-x-4 cursor-pointer active:scale-[0.98] transition border border-slate-700/50";
+
+                card.innerHTML = `
+                    <canvas class="cat-preview-canvas w-16 h-16 rounded-xl bg-slate-900 border border-slate-700 object-contain shadow-md shrink-0"></canvas>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center space-x-2 text-sky-400 mb-1">
+                            <i class="fa-solid ${cat.icon} text-xs"></i>
+                            <span class="text-[11px] font-bold uppercase tracking-wider">${cat.name}</span>
+                        </div>
+                        <h3 class="font-bold text-base text-slate-100 truncate">${completedInCat} de ${catArts.length} pintados</h3>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-500 text-sm"></i>
+                `;
+
+                card.onclick = () => openCategoryDetail(cat.id);
+                grid.appendChild(card);
+
+                if (firstArt) {
+                    renderThumbnail(card.querySelector('.cat-preview-canvas'), firstArt);
+                }
+            });
+        }
+
+        function openCategoryDetail(catId) {
+            const cat = CATEGORIES.find(c => c.id === catId);
+            const catArts = ARTWORKS.filter(a => a.category === catId);
+            const completedInCat = catArts.filter(a => gameState.progress[a.id] && gameState.progress[a.id].completed).length;
+
+            document.getElementById('cat-detail-title').innerText = cat ? cat.name : "Categoria";
+            document.getElementById('cat-detail-subtitle').innerText = `${completedInCat} de ${catArts.length} pintados`;
+
+            const grid = document.getElementById('cat-detail-drawings-grid');
+            grid.innerHTML = '';
+
+            catArts.forEach(art => {
+                const prog = gameState.progress[art.id] || { paintedPixels: {}, completed: false };
+                const painted = Object.keys(prog.paintedPixels).length;
+                const total = art.width * art.height;
+                const pct = Math.floor((painted / total) * 100);
+
+                const card = document.createElement('div');
+                card.className = "glass rounded-2xl p-3 flex flex-col justify-between space-y-3 border border-slate-700/50";
+
+                card.innerHTML = `
+                    <div class="relative bg-slate-900/80 rounded-xl p-2 flex items-center justify-center border border-slate-800">
+                        <canvas class="art-thumb-canvas w-24 h-24 object-contain"></canvas>
+                        ${prog.completed ? '<span class="absolute top-2 right-2 bg-emerald-500 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-md shadow"><i class="fa-solid fa-check"></i></span>' : ''}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-xs text-slate-200 truncate">${art.title}</h4>
+                        <p class="text-[10px] text-slate-400 mt-0.5">${art.width}x${art.height} • ${pct}%</p>
+                    </div>
+                    <button class="w-full bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 font-semibold py-1.5 rounded-xl text-xs active:scale-95 transition">
+                        ${prog.completed ? 'Pintar Novamente' : (painted > 0 ? 'Continuar' : 'Pintar')}
+                    </button>
+                `;
+
+                card.querySelector('button').onclick = () => startPainting(art.id);
+                grid.appendChild(card);
+
+                renderThumbnail(card.querySelector('.art-thumb-canvas'), art);
+            });
+
+            document.getElementById('sec-category-detail').classList.remove('hidden');
+        }
+
+        document.getElementById('cat-detail-back-btn').onclick = () => {
+            document.getElementById('sec-category-detail').classList.add('hidden');
+        };
+
+        function paintColorPixels(colorKey) {
+            if (!currentArt || !colorKey) return;
+            const artProg = gameState.progress[currentArt.id];
+
+            const unpaintedCells = [];
+            for (let r = 0; r < currentArt.height; r++) {
+                for (let c = 0; c < currentArt.width; c++) {
+                    const posKey = `${c},${r}`;
+                    if (currentArt.grid[r][c] === colorKey && !artProg.paintedPixels[posKey]) {
+                        unpaintedCells.push({ c, r, posKey });
+                    }
+                }
+            }
+
+            if (unpaintedCells.length === 0) return;
+
+            const initialCount = unpaintedCells.length;
+            const pillCountEl = document.getElementById(`pill-count-${colorKey}`);
+
+            if (gameState.settings.colorAnimation) {
+                isPaintingAnimating = true;
+                let step = 0;
+
+                const animInterval = setInterval(() => {
+                    if (step < unpaintedCells.length) {
+                        const cell = unpaintedCells[step];
+                        artProg.paintedPixels[cell.posKey] = colorKey;
+                        
+                        
+                        if (pillCountEl) {
+                            const remaining = initialCount - (step + 1);
+                            pillCountEl.innerText = Math.max(0, remaining);
+                        }
+
+                        renderCanvas();
+                        playSound('pop');
+                        step++;
+                    } else {
+                        clearInterval(animInterval);
+                        isPaintingAnimating = false;
+                        saveGameData();
+                        refreshPalette();
+                        updatePowerUpUI();
+                    }
+                }, 70);
+            } else {
+                unpaintedCells.forEach(cell => {
+                    artProg.paintedPixels[cell.posKey] = colorKey;
+                });
+                if (pillCountEl) pillCountEl.innerText = 0;
+                
+                saveGameData();
+                renderCanvas();
+                refreshPalette();
+                updatePowerUpUI();
+            }
+        }
+
+        function renderAlbumView() {
+            const completedList = document.getElementById('album-content-completed');
+            const progressList = document.getElementById('album-content-progress');
+
+            completedList.innerHTML = '';
+            progressList.innerHTML = '';
+
+            let completedCount = 0;
+            let progressCount = 0;
+
+            ARTWORKS.forEach(art => {
+                const prog = gameState.progress[art.id];
+                if (!prog) return;
+
+                const painted = Object.keys(prog.paintedPixels || {}).length;
+                const total = art.width * art.height;
+
+                if (prog.completed) {
+                    completedCount++;
+                    const card = document.createElement('div');
+                    card.className = "glass rounded-2xl p-3 flex flex-col justify-between space-y-2 border border-slate-700/50";
+                    card.innerHTML = `
+                        <div class="bg-slate-900/80 rounded-xl p-2 flex items-center justify-center border border-slate-800">
+                            <canvas class="album-thumb-canvas w-24 h-24 object-contain"></canvas>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-xs text-slate-200 truncate">${art.title}</h4>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Concluído ${prog.completedCount || 1}x</p>
+                        </div>
+                        <button class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-1.5 rounded-xl text-xs active:scale-95 transition">
+                            Pintar Novamente
+                        </button>
+                    `;
+                    card.querySelector('button').onclick = () => startPainting(art.id);
+                    completedList.appendChild(card);
+                    renderThumbnail(card.querySelector('.album-thumb-canvas'), art);
+                } else if (painted > 0) {
+                    progressCount++;
+                    const pct = Math.floor((painted / total) * 100);
+                    const card = document.createElement('div');
+                    card.className = "glass rounded-2xl p-3 flex items-center space-x-3 border border-slate-700/50";
+                    card.innerHTML = `
+                        <canvas class="album-thumb-canvas w-16 h-16 rounded-xl bg-slate-900 border border-slate-800 object-contain shrink-0"></canvas>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-sm text-slate-200 truncate">${art.title}</h4>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1.5">
+                                <div class="bg-sky-500 h-full" style="width: ${pct}%"></div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1">${pct}% concluído</p>
+                        </div>
+                        <button class="bg-sky-600 text-white font-semibold px-3 py-2 rounded-xl text-xs active:scale-95 transition shrink-0">
+                            Continuar
+                        </button>
+                    `;
+                    card.querySelector('button').onclick = () => startPainting(art.id);
+                    progressList.appendChild(card);
+                    renderThumbnail(card.querySelector('.art-thumb-canvas'), art);
+                }
+            });
+
+            document.getElementById('album-completed-count').innerText = completedCount;
+            document.getElementById('album-progress-count').innerText = progressCount;
+
+            if (completedCount === 0) completedList.innerHTML = `<p class="col-span-2 text-center text-xs text-slate-500 py-8">Nenhum desenho concluído ainda.</p>`;
+            if (progressCount === 0) progressList.innerHTML = `<p class="text-center text-xs text-slate-500 py-8">Nenhum desenho em andamento.</p>`;
+        }
+
+        document.getElementById('album-tab-completed').onclick = function() {
+            this.classList.add('text-sky-400', 'bg-slate-700/80', 'shadow');
+            this.classList.remove('text-slate-400');
+            document.getElementById('album-tab-progress').classList.remove('text-sky-400', 'bg-slate-700/80', 'shadow');
+            document.getElementById('album-tab-progress').classList.add('text-slate-400');
+
+            document.getElementById('album-content-completed').classList.remove('hidden');
+            document.getElementById('album-content-progress').classList.add('hidden');
+        };
+
+        document.getElementById('album-tab-progress').onclick = function() {
+            this.classList.add('text-sky-400', 'bg-slate-700/80', 'shadow');
+            this.classList.remove('text-slate-400');
+            document.getElementById('album-tab-completed').classList.remove('text-sky-400', 'bg-slate-700/80', 'shadow');
+            document.getElementById('album-tab-completed').classList.add('text-slate-400');
+
+            document.getElementById('album-content-progress').classList.remove('hidden');
+            document.getElementById('album-content-completed').classList.add('hidden');
+        };
+
+        /* SETTINGS HANDLERS */
+        document.getElementById('setting-sound').onchange = (e) => {
+            gameState.settings.sound = e.target.checked;
+            saveGameData();
+        };
+
+        document.getElementById('setting-music').onchange = (e) => {
+            gameState.settings.music = e.target.checked;
+            saveGameData();
+            updateLevelMusicState();
+        };
+
+        document.getElementById('setting-vibration').onchange = (e) => {
+            gameState.settings.vibration = e.target.checked;
+            saveGameData();
+        };
+
+        document.getElementById('setting-color-animation').onchange = (e) => {
+            gameState.settings.colorAnimation = e.target.checked;
+            saveGameData();
+        };
+
+        document.getElementById('btn-export-save').onclick = () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(gameState, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `pixel_quiz_save_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(dlAnchorElem);
+            dlAnchorElem.click();
+            dlAnchorElem.remove();
+        };
+
+        document.getElementById('btn-import-save').onclick = () => document.getElementById('import-file-input').click();
+
+        document.getElementById('import-file-input').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const importedData = JSON.parse(event.target.result);
+                    if (importedData && importedData.progress) {
+                        gameState = importedData;
+                        saveGameData();
+                        showSection('sec-home');
+                    }
+                } catch (err) {}
+            };
+            reader.readAsText(file);
+        };
+
+        /* Performance Accordion Toggle */
+        const accordionBtn = document.getElementById('accordion-performance-btn');
+        const accordionContent = document.getElementById('accordion-performance-content');
+        const accordionChevron = document.getElementById('accordion-chevron');
+
+        accordionBtn.onclick = () => {
+            const isHidden = accordionContent.classList.toggle('hidden');
+            accordionChevron.classList.toggle('rotate-180', !isHidden);
+        };
+
+        /* Reset Modal */
+        const resetModal = document.getElementById('reset-modal');
+        const resetInput = document.getElementById('reset-input-confirm');
+        const resetConfirmBtn = document.getElementById('reset-confirm-btn');
+
+        document.getElementById('btn-reset-save').onclick = () => {
+            resetInput.value = '';
+            resetConfirmBtn.disabled = true;
+            resetModal.classList.remove('hidden');
+        };
+
+        resetInput.oninput = () => {
+            resetConfirmBtn.disabled = (resetInput.value.trim().toUpperCase() !== "RESET");
+        };
+
+        document.getElementById('reset-cancel-btn').onclick = () => resetModal.classList.add('hidden');
+
+        resetConfirmBtn.onclick = () => {
+            localStorage.removeItem(SAVE_KEY);
+            gameState = {
+                progress: {},
+                lastPlayedArtId: null,
+                powerups: { autorespond: 1, eliminate: 1 },
+                powerupOpProgress: 0,
+                stats: { totalTimeSeconds: 0, totalClicks: 0, correctClicks: 0, totalErrors: 0, solvedEquations: 0, powerupsUsed: 0 },
+                settings: { sound: true, music: true, vibration: true, colorAnimation: true }
+            };
+            stopLevelMusic();
+            resetModal.classList.add('hidden');
+            showSection('sec-home');
+        };
+
+        /* Completion Modal Handlers */
+        document.getElementById('complete-album-btn').onclick = () => {
+            document.getElementById('complete-modal').classList.add('hidden');
+            showSection('sec-album');
+        };
+
+        document.getElementById('complete-home-btn').onclick = () => {
+            document.getElementById('complete-modal').classList.add('hidden');
+            showSection('sec-home');
+        };
+
+        /* INITIALIZATION */
+        window.onload = function () {
+            loadSaveData();
+            document.getElementById('setting-sound').checked = gameState.settings.sound;
+            document.getElementById('setting-music').checked = gameState.settings.music;
+            document.getElementById('setting-vibration').checked = gameState.settings.vibration;
+            document.getElementById('setting-color-animation').checked = gameState.settings.colorAnimation;
+            showSection('sec-home');
+        };
+    </script>
+</body>
+</html>
