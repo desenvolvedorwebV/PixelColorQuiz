@@ -745,16 +745,27 @@
             });
         }
         
-        // Captura o evento nativo de instalação
+        function isAppInstalled() {
+            return window.matchMedia('(display-mode: standalone)').matches ||
+                   window.navigator.standalone === true;
+        }
+
+        function checkPWAInstallation() {
+            const installModal = document.getElementById('pwa-install-modal');
+            if (installModal) {
+                installModal.classList.toggle('hidden', isAppInstalled());
+            }
+        }
+
+        // Guarda o evento nativo; a oferta de instalação também aparece ao carregar.
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-        
-            // Exibe o modal apenas se o usuário ainda não tiver dispensado na sessão atual
-            if (!sessionStorage.getItem('pwa_prompt_dismissed')) {
-                const installModal = document.getElementById('pwa-install-modal');
-                if (installModal) installModal.classList.remove('hidden');
-            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredPrompt = null;
+            document.getElementById('pwa-install-modal').classList.add('hidden');
         });
         
         // Configuração dos botões do modal
@@ -765,11 +776,19 @@
         
             if (installBtn) {
                 installBtn.onclick = async () => {
-                    if (installModal) installModal.classList.add('hidden');
                     if (deferredPrompt) {
-                        deferredPrompt.prompt();
-                        const { outcome } = await deferredPrompt.userChoice;
+                        const promptEvent = deferredPrompt;
                         deferredPrompt = null;
+                        try {
+                            await promptEvent.prompt();
+                            await promptEvent.userChoice;
+                            if (installModal) installModal.classList.add('hidden');
+                        } catch (err) {
+                            console.error('Erro ao abrir a instalação:', err);
+                            document.getElementById('pwa-install-help').classList.remove('hidden');
+                        }
+                    } else {
+                        document.getElementById('pwa-install-help').classList.remove('hidden');
                     }
                 };
             }
@@ -777,7 +796,6 @@
             if (dismissBtn) {
                 dismissBtn.onclick = () => {
                     if (installModal) installModal.classList.add('hidden');
-                    sessionStorage.setItem('pwa_prompt_dismissed', 'true');
                 };
             }
         });
@@ -2239,6 +2257,7 @@
             document.getElementById('setting-vibration').checked = gameState.settings.vibration;
             document.getElementById('setting-color-animation').checked = gameState.settings.colorAnimation;
             showSection('sec-home');
+            checkPWAInstallation();
         };
     </script>
     <!-- MODAL DE INSTALAÇÃO PWA -->
@@ -2250,6 +2269,7 @@
             <div>
                 <h3 class="text-lg font-extrabold text-slate-100">Instalar Pixel Quiz?</h3>
                 <p class="text-xs text-slate-300 mt-1">Instale o aplicativo na sua tela inicial para jogar offline e ter uma experiência em tela cheia.</p>
+                <p id="pwa-install-help" class="hidden text-xs text-sky-300 mt-2">Se a instalação ainda não estiver disponível, aguarde alguns instantes e toque em Instalar novamente. Você também pode usar a opção Instalar aplicativo ou Adicionar à tela inicial no menu do navegador. No iPhone/iPad, use Compartilhar e Adicionar à Tela de Início no Safari.</p>
             </div>
             <div class="flex space-x-2 pt-2">
                 <button id="pwa-dismiss-btn" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl text-xs active:scale-95 transition">
