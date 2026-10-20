@@ -3,19 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pixel Quiz Color - Jogo de Pintura e Quiz</title>
-
-    <!-- Configurações para PWA e Suporte Mobile (iOS / Android) -->
+    <title>Pixel Math Color - Jogo de Pintura Matemática</title>
+    
+    <!-- Configurações PWA -->
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
-    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Pixel Quiz">
-    <link rel="apple-touch-icon" href="PixelColorQuiz.png">
-    <link rel="icon" type="image/png" href="PixelColorQuiz.png">
-
-    <!-- Web App Manifest (Gerado Inline para Instalação) -->
-    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="PixelMathColor.png">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -114,60 +109,13 @@
             cursor: grabbing;
         }
 
-        /* Card Flip Animation */
-        .perspective-1000 {
-            perspective: 1000px;
+        /* Power-Up Pulse Glow Effect */
+        @keyframes pulse-powerup {
+            0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); transform: scale(1); }
+            50% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.9); transform: scale(1.03); }
         }
-        .card-inner {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            transition: transform 0.6s ease-in-out;
-            transform-style: preserve-3d;
-        }
-        .card-inner.flipped {
-            transform: rotateY(180deg);
-        }
-        .card-front, .card-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-            border-radius: 0.75rem;
-        }
-        .card-back {
-            transform: rotateY(180deg);
-        }
-
-        @keyframes shake-elimination {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-6px); }
-            40%, 80% { transform: translateX(6px); }
-        }
-        .animate-eliminate {
-            animation: shake-elimination 0.5s ease-in-out forwards;
-            opacity: 0.25;
-            pointer-events: none;
-            filter: grayscale(1);
-        }
-
-        @keyframes shake-screen {
-            0%, 100% { transform: translate(0, 0); }
-            10%, 30%, 50%, 70%, 90% { transform: translate(-10px, 6px); }
-            20%, 40%, 60%, 80% { transform: translate(10px, -6px); }
-        }
-        .animate-shake-screen {
-            animation: shake-screen 0.4s ease-in-out;
-        }
-
-        @keyframes pulse-autorespond {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-        .autorespond-glow {
-            animation: pulse-autorespond 1s ease-in-out infinite;
+        .powerup-active-glow {
+            animation: pulse-powerup 1.5s infinite ease-in-out;
         }
 
         ::-webkit-scrollbar {
@@ -184,20 +132,6 @@
     </style>
 </head>
 <body class="app-viewport w-screen overflow-hidden flex flex-col justify-between select-none">
-    <!-- POWER-UP EMPTY TOAST MODAL -->
-    <div id="toast-powerup-empty" class="fixed top-8 left-1/2 -translate-x-1/2 z-[100] transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-6 max-w-xs w-[90%]">
-        <div class="glass border-2 border-amber-500 bg-slate-900/98 rounded-2xl p-3.5 shadow-2xl flex items-center space-x-3 text-slate-200">
-            <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-triangle-exclamation text-base"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-                <h4 id="toast-powerup-title" class="text-xs font-black text-amber-300 leading-tight">Sem Power-ups!</h4>
-                <p class="text-[11px] text-slate-300 mt-0.5 leading-tight">
-                    <span id="toast-powerup-needed">Faltam 10 acertos para ganhar o próximo powerup. Continue jogando.</span>
-                </p>
-            </div>
-        </div>
-    </div>
 
     <!-- MAIN SPA SCREEN CONTAINER -->
     <main id="app-container" class="flex-1 relative overflow-hidden w-full h-full">
@@ -207,15 +141,16 @@
             <!-- Header com Imagem de Ícone Local -->
             <div class="flex justify-between items-center pt-2">
                 <div class="flex items-center space-x-3 h-10">
-                    <img src="PixelColorQuiz.png" alt="Ícone do Jogo" class="h-full aspect-square rounded-xl object-cover border border-slate-700/50 shadow-md shrink-0">
+                    <img src="PixelMathColor.png" alt="Ícone do Jogo" class="h-full aspect-square rounded-xl object-cover border border-slate-700/50 shadow-md shrink-0">
+                    
                     <div class="flex flex-col justify-center h-full">
-                        <h1 class="text-2xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-indigo-400 to-amber-400">Pixel Quiz Color</h1>
-                        <p class="text-xs text-slate-200 mt-1">Pinte respondendo perguntas!</p>
+                        <h1 class="text-2xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-indigo-400 to-amber-400">Pixel Math Color</h1>
+                        <p class="text-xs text-slate-400 mt-1">Pinte resolvendo contas de cabeça!</p>
                     </div>
                 </div>
 
-                <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700/50 shrink-0" style="display: none;">
-                    <i class="fa-solid fa-award text-amber-400 text-xs"></i>
+                <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700/50 shrink-0" style="display:none">
+                    <i class="fa-solid fa-graduation-cap text-amber-400 text-xs"></i>
                     <span id="home-user-lvl" class="text-xs font-bold text-slate-200">Nível 1</span>
                 </div>
             </div>
@@ -240,38 +175,28 @@
                 </button>
             </div>
 
-            <!-- Power-Up Inventory Dashboard Card -->
-            <div class="glass rounded-2xl p-4 border border-amber-500/30 bg-gradient-to-r from-slate-900 via-slate-800/80 to-amber-950/20 space-y-3">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <i class="fa-solid fa-wand-magic-sparkles text-amber-400 text-sm"></i>
-                        <h3 class="text-xs font-black uppercase text-amber-300 tracking-wider">Power-ups</h3>
+            <!-- Power-Up Highlight Inventory Status Banner -->
+            <div class="glass rounded-2xl p-4 border border-amber-500/30 bg-gradient-to-r from-slate-900 via-slate-800/80 to-amber-950/30">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 text-slate-950 flex items-center justify-center font-black text-lg shadow-md shadow-amber-500/20">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-black uppercase text-amber-300 tracking-wider">Dica Reveladora</h3>
+                            <p class="text-[11px] text-slate-300">Destaque os quadrados por 1 min</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span id="home-powerup-count" class="text-xl font-black text-amber-400">1</span>
+                        <span class="text-[10px] text-slate-400 block font-semibold">uso(s) disp.</span>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/60 flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <i class="fa-solid fa-circle-question text-emerald-400 text-xs"></i>
-                            <span class="text-xs font-bold text-slate-200">Gabarito</span>
-                        </div>
-                        <span id="home-autorespond-count" class="text-sm font-black text-emerald-400 bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-700">1</span>
-                    </div>
-
-                    <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/60 flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <i class="fa-solid fa-eraser text-indigo-400 text-xs"></i>
-                            <span class="text-xs font-bold text-slate-200">Borracha</span>
-                        </div>
-                        <span id="home-eliminate-count" class="text-sm font-black text-indigo-400 bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-700">1</span>
-                    </div>
-                </div>
-
                 <!-- Progress bar to next power-up -->
-                <div class="space-y-1 pt-1 border-t border-slate-800">
+                <div class="space-y-1 pt-1">
                     <div class="flex justify-between text-[10px] font-bold text-slate-400">
-                        <span>Ganhar +1 Power-up (Sorteio)</span>
-                        <span id="home-powerup-progress-text" class="text-amber-400">0 / 10 acertos</span>
+                        <span>Progresso Para +1 Dica</span>
+                        <span id="home-powerup-progress-text" class="text-amber-400">0 / 500 contas</span>
                     </div>
                     <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700/50">
                         <div id="home-powerup-progress-bar" class="bg-gradient-to-r from-amber-500 to-yellow-400 h-full w-0 transition-all duration-300"></div>
@@ -293,8 +218,8 @@
 
                 <div class="glass-card p-3.5 rounded-2xl flex flex-col justify-between">
                     <div class="flex items-center justify-between text-slate-400">
-                        <span class="text-xs font-medium">Acertos</span>
-                        <i class="fa-solid fa-circle-check text-sky-400"></i>
+                        <span class="text-xs font-medium">Resolvidas</span>
+                        <i class="fa-solid fa-calculator text-sky-400"></i>
                     </div>
                     <div class="mt-2">
                         <span id="stat-total-equations" class="text-2xl font-black text-slate-100">0</span>
@@ -313,7 +238,7 @@
 
                 <div class="glass-card p-3.5 rounded-2xl flex flex-col justify-between">
                     <div class="flex items-center justify-between text-slate-400">
-                        <span class="text-xs font-medium">Tempo Jogado</span>
+                        <span class="text-xs font-medium">Tempo Acumulado</span>
                         <i class="fa-solid fa-clock text-indigo-400"></i>
                     </div>
                     <div class="mt-2">
@@ -322,7 +247,7 @@
                 </div>
             </div>
 
-            <!-- Analytics Accordion -->
+            <!-- Detailed Stats Analytics Accordion -->
             <div class="glass rounded-2xl overflow-hidden border border-slate-700/50">
                 <button id="accordion-performance-btn" class="w-full p-4 flex justify-between items-center text-left focus:outline-none hover:bg-slate-800/40 transition">
                     <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
@@ -334,15 +259,19 @@
                 <div id="accordion-performance-content" class="hidden p-4 pt-0 space-y-3 border-t border-slate-800/80">
                     <div class="divide-y divide-slate-800 text-xs pt-2">
                         <div class="py-2 flex justify-between items-center">
-                            <span class="text-slate-400">Dicas Utilizadas</span>
+                            <span class="text-slate-400">Categoria Favorita</span>
+                            <span id="stat-fav-cat" class="font-bold text-slate-200">Nenhuma</span>
+                        </div>
+                        <div class="py-2 flex justify-between items-center">
+                            <span class="text-slate-400">Power-Ups Utilizados</span>
                             <span id="stat-powerups-used" class="font-bold text-amber-400">0</span>
                         </div>
                         <div class="py-2 flex justify-between items-center">
-                            <span class="text-slate-400">Erros</span>
+                            <span class="text-slate-400">Erros Cometidos</span>
                             <span id="stat-total-errors" class="font-bold text-rose-400">0</span>
                         </div>
                         <div class="py-2 flex justify-between items-center">
-                            <span class="text-slate-400">Progresso Geral</span>
+                            <span class="text-slate-400">Progresso Geral do Jogo</span>
                             <span id="stat-game-progress" class="font-bold text-sky-400">0%</span>
                         </div>
                     </div>
@@ -353,8 +282,8 @@
             </div>
 
             <div class="text-center pt-4">
-                <p class="text-xs text-slate-500">Pixel Quiz Color v0.1</p>
-                <p class="text-[10px] text-slate-600">Aprenda e divirta-se colorindo!</p>
+                <p class="text-xs text-slate-500">Pixel Math Color v0.1</p>
+                <p class="text-[10px] text-slate-600">Treine matemática de forma divertida!</p>
                 <p class="text-[10px] text-slate-600">©2026 Viniciusav</p>
             </div>
         </section>
@@ -364,12 +293,12 @@
             <h1 class="text-xl font-extrabold text-slate-100"><i class="fa-solid fa-layer-group text-lg"></i> Categorias</h1>
             
             <div id="categories-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <!-- Populated Dynamically -->
+                <!-- Dynamically Populated -->
             </div>
 
             <div class="text-center pt-4">
-                <p class="text-xs text-slate-500">Pixel Quiz Color v0.1</p>
-                <p class="text-[10px] text-slate-600">Aprenda e divirta-se colorindo!</p>
+                <p class="text-xs text-slate-500">Pixel Math Color v0.1</p>
+                <p class="text-[10px] text-slate-600">Treine matemática de forma divertida!</p>
                 <p class="text-[10px] text-slate-600">©2026 Viniciusav</p>
             </div>
         </section>
@@ -387,18 +316,13 @@
             </div>
             
             <div id="cat-detail-drawings-grid" class="grid grid-cols-2 gap-3">
-                <!-- Populated Dynamically -->
-            </div>
-            <div class="text-center pt-4">
-                <p class="text-xs text-slate-500">Pixel Quiz Color v0.1</p>
-                <p class="text-[10px] text-slate-600">Aprenda e divirta-se colorindo!</p>
-                <p class="text-[10px] text-slate-600">©2026 Viniciusav</p>
+                <!-- Dynamically populated artwork cards -->
             </div>
         </section>
 
         <!-- ==================== ALBUM SECTION ==================== -->
         <section id="sec-album" class="spa-section absolute inset-0 overflow-y-auto p-4 pb-28 space-y-4 no-scrollbar hidden">
-            <h1 class="text-xl font-extrabold text-slate-100"><i class="fa-solid fa-images text-lg"></i> Álbum de Arte</h1>
+            <h1 class="text-xl font-extrabold text-slate-100"><i class="fa-solid fa-images text-lg"></i> Álbum de Conquistas</h1>
             
             <div class="flex bg-slate-800/80 p-1 rounded-xl border border-slate-700/50">
                 <button id="album-tab-completed" class="flex-1 py-2 rounded-lg text-xs font-bold transition text-sky-400 bg-slate-700/80 shadow">
@@ -409,12 +333,17 @@
                 </button>
             </div>
 
-            <div id="album-content-completed" class="grid grid-cols-2 gap-3"></div>
-            <div id="album-content-progress" class="grid grid-cols-1 gap-3 hidden"></div>
+            <div id="album-content-completed" class="grid grid-cols-2 gap-3">
+                <!-- Completed Artworks -->
+            </div>
+
+            <div id="album-content-progress" class="grid grid-cols-1 gap-3 hidden">
+                <!-- In Progress Artworks -->
+            </div>
 
             <div class="text-center pt-4">
-                <p class="text-xs text-slate-500">Pixel Quiz Color v0.1</p>
-                <p class="text-[10px] text-slate-600">Aprenda e divirta-se colorindo!</p>
+                <p class="text-xs text-slate-500">Pixel Math Color v0.1</p>
+                <p class="text-[10px] text-slate-600">Treine matemática de forma divertida!</p>
                 <p class="text-[10px] text-slate-600">©2026 Viniciusav</p>
             </div>
         </section>
@@ -433,7 +362,7 @@
                         </div>
                         <div>
                             <p class="text-sm font-semibold text-slate-200">Efeitos Sonoros</p>
-                            <p class="text-[11px] text-slate-400">Sons de toque e acerto/erro (MP3)</p>
+                            <p class="text-[11px] text-slate-400">Sons de toque e respostas</p>
                         </div>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -442,31 +371,14 @@
                     </label>
                 </div>
 
-                <!-- Music Setting Toggle -->
-                <div class="flex justify-between items-center pt-2 border-t border-slate-800">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400">
-                            <i class="fa-solid fa-music"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-semibold text-slate-200">Música de Fundo</p>
-                            <p class="text-[11px] text-slate-400">Música contínua nos desenhos</p>
-                        </div>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="setting-music" class="sr-only peer" checked>
-                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
-                    </label>
-                </div>
-
-                <div class="flex justify-between items-center pt-2 border-t border-slate-800">
+                <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-3">
                         <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                             <i class="fa-solid fa-mobile-screen-button"></i>
                         </div>
                         <div>
                             <p class="text-sm font-semibold text-slate-200">Vibração (Haptic)</p>
-                            <p class="text-[11px] text-slate-400">Feedback tátil ao interagir</p>
+                            <p class="text-[11px] text-slate-400">Feedback tátil ao acertar/errar</p>
                         </div>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -474,26 +386,8 @@
                         <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
                     </label>
                 </div>
-
-                <!-- Color Animation Toggle -->
-                <div class="flex justify-between items-center pt-2 border-t border-slate-800">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400">
-                            <i class="fa-solid fa-paintbrush"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-semibold text-slate-200">Animação ao Colorir</p>
-                            <p class="text-[11px] text-slate-400">Pinta quadradinho por quadradinho</p>
-                        </div>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="setting-color-animation" class="sr-only peer" checked>
-                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
-                    </label>
-                </div>
             </div>
 
-            <!-- Data Management -->
             <div class="glass rounded-2xl p-4 space-y-3">
                 <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Dados & Progresso</h2>
                 
@@ -524,15 +418,14 @@
             </div>
 
             <div class="text-center pt-4">
-                <p class="text-xs text-slate-500">Pixel Quiz Color v0.1</p>
-                <p class="text-[10px] text-slate-600">Aprenda e divirta-se colorindo!</p>
+                <p class="text-xs text-slate-500">Pixel Math Color v0.1</p>
+                <p class="text-[10px] text-slate-600">Treine matemática de forma divertida!</p>
                 <p class="text-[10px] text-slate-600">©2026 Viniciusav</p>
             </div>
         </section>
 
-        <!-- ==================== CANVAS GAMEPLAY SCREEN ==================== -->
+        <!-- ==================== PIXEL CANVAS GAMEPLAY SCREEN ==================== -->
         <section id="sec-canvas-game" class="spa-section fixed inset-0 flex flex-col bg-slate-950 z-40 hidden">
-            <!-- Top Bar -->
             <header class="glass py-2 px-3 flex items-center justify-between border-b border-slate-800 z-10">
                 <button id="game-back-btn" class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 active:scale-95 shrink-0">
                     <i class="fa-solid fa-arrow-left"></i>
@@ -541,7 +434,7 @@
                 <div class="text-center flex-1 mx-2 min-w-0">
                     <h2 id="game-drawing-title" class="text-sm font-bold text-slate-100 truncate">Desenho</h2>
                     <div class="flex items-center justify-center space-x-2 text-[11px] text-slate-400">
-                        <span id="game-category-tag" class="text-sky-400 font-semibold truncate">Conhecimentos Gerais</span>
+                        <span id="game-category-tag" class="text-sky-400 font-semibold truncate">Adições</span>
                         <span>•</span>
                         <span id="game-progress-text">0%</span>
                         <span>•</span>
@@ -549,25 +442,31 @@
                     </div>
                 </div>
 
-                <!-- Level Music Toggle Button in Top Bar -->
-                <button id="game-music-btn" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700/80 flex items-center justify-center text-purple-400 active:scale-95 shrink-0 transition" title="Música do Nível">
-                    <i id="game-music-icon" class="fa-solid fa-music text-xs"></i>
-                </button>
+                <div class="flex items-center space-x-2 shrink-0">
+                    <button id="game-hint-btn" class="relative px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 border border-amber-300/80 text-xs font-black flex items-center space-x-1.5 shadow-md shadow-amber-500/20 active:scale-95 transition">
+                        <i class="fa-solid fa-bolt text-sm"></i>
+                        <span id="powerup-btn-label">REVELAR 1 MIN</span>
+                        <span id="powerup-badge-count" class="bg-slate-950 text-amber-400 text-[10px] px-1.5 py-0.2 rounded-full border border-amber-500/50 font-bold ml-1">1</span>
+                    </button>
+                </div>
             </header>
 
-            <!-- Color VS Values Legend Banner -->
-            <div class="bg-slate-900/90 border-b border-slate-800 px-3 py-2 text-center flex items-center justify-center">
+            <div class="bg-slate-900/90 border-b border-slate-800 px-3 py-2 text-center flex items-center justify-between">
                 <div id="active-color-badge" class="inline-flex items-center px-3 py-1 rounded-full border border-slate-700 bg-slate-800 text-xs font-bold text-slate-100 space-x-2 shadow-inner">
-                    <span id="active-color-text"><i class="fa-solid fa-triangle-exclamation"></i> Clique em uma cor ou em um pixel para responder.</span>
+                    <div id="active-color-dot" class="w-3.5 h-3.5 rounded-full border border-black/30"></div>
+                    <span id="active-color-text">Selecione uma cor</span>
+                </div>
+                
+                <div id="powerup-status-bar" class="hidden text-xs font-black text-amber-400 flex items-center space-x-1 animate-pulse">
+                    <i class="fa-solid fa-eye"></i>
+                    <span>Destaque Ativo: <span id="powerup-active-timer">01:00</span></span>
                 </div>
             </div>
 
-            <!-- Canvas Container -->
             <div id="canvas-container" class="flex-1 relative overflow-hidden flex items-center justify-center">
                 <canvas id="paint-canvas" class="shadow-2xl"></canvas>
                 
-                <!-- Zoom & Music Controls -->
-                <div class="absolute right-3 bottom-3 flex flex-col space-y-2 z-20" onclick="event.stopPropagation()">
+                <div class="absolute right-3 bottom-3 flex flex-col space-y-2">
                     <button id="btn-zoom-in" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-200 active:scale-95 shadow-lg">
                         <i class="fa-solid fa-plus"></i>
                     </button>
@@ -580,9 +479,10 @@
                 </div>
             </div>
 
-            <!-- Bottom Palette -->
             <footer class="glass py-2.5 px-2 border-t border-slate-800 z-10 flex flex-col justify-center min-h-[90px] bottom-nav-safe">
-                <div id="color-palette-container" class="flex items-center space-x-2 overflow-x-auto px-2 no-scrollbar py-1"></div>
+                <div id="color-palette-container" class="flex items-center space-x-2 overflow-x-auto px-2 no-scrollbar py-1">
+                    <!-- Dynamic Math Color Pills rendered here -->
+                </div>
             </footer>
         </section>
 
@@ -608,78 +508,54 @@
         </button>
     </nav>
 
-    <!-- ==================== QUIZ MODAL WITH POWERUPS INCLUDED ==================== -->
-    <div id="quiz-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="glass border border-sky-500/40 rounded-2xl max-w-md w-full p-5 space-y-3 shadow-2xl relative">
-            
-            <!-- Header (Cor do Pixel + Navegação entre Perguntas + Fechar) -->
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div class="flex items-center space-x-2">
-                    <div id="quiz-modal-color-dot" class="w-4 h-4 rounded-full border border-black/30"></div>
-                    <span id="quiz-modal-color-name" class="text-xs font-bold text-slate-200">Cor</span>
-                </div>
+    <!-- PWA INSTALL MODAL -->
+    <div id="pwa-install-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass border border-sky-500/30 rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl relative overflow-hidden">
+            <img src="PixelMathColor.png" alt="Ícone do Jogo" class="w-20 h-20 rounded-2xl mx-auto shadow-lg border border-slate-700 object-cover">
 
-                <!-- Painel de Navegação de Perguntas quando houver mais de uma -->
-                <div id="quiz-modal-nav-container" class="hidden items-center space-x-2 bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-700/60">
-                    <button id="quiz-nav-prev" class="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center text-xs transition active:scale-95 disabled:opacity-30">
-                        <i class="fa-solid fa-chevron-left"></i>
-                    </button>
-                    <span id="quiz-nav-indicator" class="text-[11px] font-bold text-sky-400">Pergunta 1 de 2</span>
-                    <button id="quiz-nav-next" class="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center text-xs transition active:scale-95 disabled:opacity-30">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </button>
-                </div>
+            <div>
+                <h2 class="text-xl font-extrabold text-slate-100">Instalar Pixel Math Color</h2>
+                <p class="text-xs text-slate-300 mt-2">Instale o aplicativo no seu dispositivo para jogar em tela cheia e com acesso rápido!</p>
+            </div>
 
-                <button id="quiz-modal-close-btn" class="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition">
-                    <i class="fa-solid fa-xmark text-sm"></i>
+            <div class="space-y-2 pt-2">
+                <button id="pwa-btn-install" class="w-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-sky-500/20 active:scale-95 transition">
+                    Instalar
+                </button>
+                <button id="pwa-btn-later" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl text-xs active:scale-95 transition">
+                    Talvez Depois
                 </button>
             </div>
-
-            <!-- Power-up Bar na LINHA DE BAIXO -->
-            <div class="relative">
-                <div class="flex items-center justify-center space-x-3 bg-slate-900/60 p-2 rounded-xl border border-slate-800">
-                    <!-- Autorespond Powerup Button -->
-                    <button id="powerup-btn-autorespond" class="flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-900/60 border border-emerald-500/50 text-emerald-300 text-xs font-bold flex items-center justify-center space-x-2 transition active:scale-95 shadow">
-                        <i class="fa-solid fa-circle-question text-xs text-emerald-400"></i>
-                        <span>Gabarito</span>
-                        <span id="powerup-badge-autorespond" class="bg-emerald-500 text-slate-950 text-[10px] px-2 py-0.5 rounded-full font-black ml-1">1</span>
-                    </button>
-
-                    <!-- Eliminate Powerup Button -->
-                    <button id="powerup-btn-eliminate" class="flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-indigo-900/60 border border-indigo-500/50 text-indigo-300 text-xs font-bold flex items-center justify-center space-x-2 transition active:scale-95 shadow">
-                        <i class="fa-solid fa-eraser text-xs text-indigo-400"></i>
-                        <span>Borracha</span>
-                        <span id="powerup-badge-eliminate" class="bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black ml-1">1</span>
-                    </button>
-                </div>
-
-                <!-- Floating Card Draw Popover -->
-                <div id="card-draw-container" class="hidden absolute left-0 right-0 top-12 z-20 bg-slate-900 border-2 border-indigo-500/80 rounded-2xl p-3 text-center space-y-2 shadow-2xl animate-fade-in backdrop-blur-md">
-                    <p class="text-xs font-bold text-indigo-300 flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-clone"></i> Escolha uma!
-                    </p>
-                    <div id="cards-wrapper" class="flex justify-center items-center gap-2 pt-1"></div>
-                </div>
-            </div>
-
-            <!-- Pergunta com altura máxima finita e barra de scroll visível -->
-            <div class="pt-1">
-                <div class="max-h-24 overflow-y-auto mt-1 pr-2 pl-2">
-                    <h3 id="quiz-modal-question" class="text-sm font-bold text-slate-100 leading-snug">
-                        Carregando pergunta...
-                    </h3>
-                </div>
-            </div>
-
-            <!-- Quiz Options Container -->
-            <div id="quiz-modal-options" class="space-y-2 pt-1"></div>
-
-            <!-- Feedback Alert Bar -->
-            <div id="quiz-modal-feedback" class="hidden p-2.5 rounded-xl text-xs font-bold text-center"></div>
         </div>
     </div>
 
-    <!-- RESET MODAL -->
+    <!-- NO POWERUP CHARGES MODAL -->
+    <div id="no-powerup-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass border border-amber-500/40 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-center">
+            <div class="w-14 h-14 bg-amber-500/20 text-amber-400 rounded-full flex items-center justify-center mx-auto text-2xl border border-amber-500/40">
+                <i class="fa-solid fa-bolt-lightning"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-extrabold text-slate-100">Sem Dicas Disponíveis!</h3>
+                <p class="text-xs text-slate-300 mt-1">Você precisa resolver mais operações de cabeça para liberar o próximo Power-Up de Dica Reveladora.</p>
+            </div>
+            <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs space-y-1.5">
+                <div class="flex justify-between font-bold text-slate-400">
+                    <span>Progresso atual:</span>
+                    <span id="modal-powerup-progress-text" class="text-amber-400">0 / 500 contas</span>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div id="modal-powerup-progress-bar" class="bg-amber-400 h-full w-0"></div>
+                </div>
+                <p id="modal-powerup-needed-text" class="text-[11px] text-slate-400 pt-1">Faltam 500 contas corretas.</p>
+            </div>
+            <button id="no-powerup-close-btn" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-extrabold py-2.5 rounded-xl text-xs active:scale-95 transition">
+                Entendido, Continuar Jogando
+            </button>
+        </div>
+    </div>
+
+    <!-- RESET CONFIRMATION MODAL -->
     <div id="reset-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="glass border border-slate-700/80 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
             <div class="text-center space-y-2">
@@ -687,7 +563,7 @@
                     <i class="fa-solid fa-triangle-exclamation"></i>
                 </div>
                 <h3 class="text-lg font-bold text-slate-100">Reiniciar Progresso?</h3>
-                <p class="text-xs text-slate-400">Esta ação apagará todo o histórico de pinturas e estatísticas.</p>
+                <p class="text-xs text-slate-400">Esta ação apagará todo o histórico de desenhos e estatísticas matemáticas.</p>
             </div>
             <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Digite <strong class="text-rose-400">RESET</strong> para confirmar:</label>
@@ -700,14 +576,16 @@
         </div>
     </div>
 
-    <!-- CONGRATULATIONS MODAL -->
+    <!-- CONGRATULATIONS / COMPLETE ART MODAL -->
     <div id="complete-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
         <div class="glass border border-sky-500/30 rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl relative overflow-hidden">
-            <canvas id="complete-art-canvas" class="w-24 h-24 bg-slate-900 border-2 border-amber-400/80 rounded-2xl mx-auto object-contain shadow-xl shadow-amber-500/20"></canvas>
+            <div class="w-20 h-20 bg-gradient-to-tr from-amber-400 to-amber-200 text-slate-950 rounded-2xl flex items-center justify-center mx-auto text-3xl shadow-lg shadow-amber-500/20 rotate-3">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
 
             <div>
-                <h2 class="text-2xl font-black text-slate-100">Parabéns!</h2>
-                <p id="complete-art-title" class="text-sm font-semibold text-sky-400 mt-1">Desenho Concluído</p>
+                <h2 class="text-2xl font-black text-slate-100">Fantástico!</h2>
+                <p id="complete-art-title" class="text-sm font-semibold text-sky-400 mt-1">Nome da Arte</p>
             </div>
 
             <div class="grid grid-cols-2 gap-2 bg-slate-900/60 p-3 rounded-2xl border border-slate-800 text-xs">
@@ -732,205 +610,118 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT CORE -->
+    <!-- JAVASCRIPT APPLICATION CORE -->
     <script>
-        /* REGISTER SERVICE WORKER & PWA INSTALLATION PROMPT */
+        /* ==========================================================================
+           0. PWA INSTALLATION & SERVICE WORKER LOGIC
+           ========================================================================== */
         let deferredPrompt = null;
-        
+
+        // Registrar Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch((err) => {
-                    console.error('Erro ao registrar Service Worker:', err);
+                navigator.serviceWorker.register('./sw.js').catch(err => {
+                    console.log('Falha ao registrar Service Worker:', err);
                 });
             });
         }
-        
+
         function isAppInstalled() {
-            return window.matchMedia('(display-mode: standalone)').matches ||
+            return window.matchMedia('(display-mode: standalone)').matches || 
                    window.navigator.standalone === true;
         }
 
         function checkPWAInstallation() {
-            const installModal = document.getElementById('pwa-install-modal');
-            if (installModal) {
-                installModal.classList.toggle('hidden', isAppInstalled());
+            if (isAppInstalled()) {
+                // Se já estiver instalado, fecha o modal se estiver aberto e inicia normalmente
+                document.getElementById('pwa-install-modal').classList.add('hidden');
+            } else {
+                // Se não estiver instalado, exibe o modal de instalação
+                document.getElementById('pwa-install-modal').classList.remove('hidden');
             }
         }
 
-        // Guarda o evento nativo; a oferta de instalação também aparece ao carregar.
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
         });
 
+        document.getElementById('pwa-btn-install').onclick = async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+            }
+            document.getElementById('pwa-install-modal').classList.add('hidden');
+        };
+
+        document.getElementById('pwa-btn-later').onclick = () => {
+            document.getElementById('pwa-install-modal').classList.add('hidden');
+        };
+
         window.addEventListener('appinstalled', () => {
-            deferredPrompt = null;
             document.getElementById('pwa-install-modal').classList.add('hidden');
         });
-        
-        // Configuração dos botões do modal
-        document.addEventListener('DOMContentLoaded', () => {
-            const installBtn = document.getElementById('pwa-install-btn');
-            const dismissBtn = document.getElementById('pwa-dismiss-btn');
-            const installModal = document.getElementById('pwa-install-modal');
-        
-            if (installBtn) {
-                installBtn.onclick = async () => {
-                    if (deferredPrompt) {
-                        const promptEvent = deferredPrompt;
-                        deferredPrompt = null;
-                        try {
-                            await promptEvent.prompt();
-                            await promptEvent.userChoice;
-                            if (installModal) installModal.classList.add('hidden');
-                        } catch (err) {
-                            console.error('Erro ao abrir a instalação:', err);
-                            document.getElementById('pwa-install-help').classList.remove('hidden');
-                        }
-                    } else {
-                        document.getElementById('pwa-install-help').classList.remove('hidden');
-                    }
-                };
-            }
-        
-            if (dismissBtn) {
-                dismissBtn.onclick = () => {
-                    if (installModal) installModal.classList.add('hidden');
-                };
-            }
-        });
 
-        /* CATEGORIES DEFINITIONS */
+
+        /* ==========================================================================
+           1. CATEGORIES DEFINITIONS
+           ========================================================================== */
         const CATEGORIES = [
-            { id: "general", name: "Conhecimentos Gerais", icon: "fa-globe" },
-            { id: "science", name: "Ciência e Natureza", icon: "fa-flask" },
-            { id: "pop", name: "Cultura Pop & Arte", icon: "fa-film" }
+            { id: "add-20", name: "Adições até 20", icon: "fa-plus" },
+            { id: "add-10", name: "Adições até 10", icon: "fa-calculator" },
+            { id: "sub-10", name: "Subtração Básica", icon: "fa-minus" },
+            { id: "multiplication", name: "Multiplicação (Tabuada)", icon: "fa-xmark" }
         ];
 
-        /* ARTWORKS REPOSITORY WITH PER-COLOR TRIVIA QUESTIONS */
+        /* ==========================================================================
+           2. MATH ARTWORKS REPOSITORY
+           ========================================================================== */
         const ARTWORKS = [
             {
                 id: "cat-angry-add20",
-                title: "Gatinho Irritado",
-                category: "general",
+                title: "Gatinho (Irritado)",
+                category: "add-20",
                 width: 16,
                 height: 16,
                 colorMap: {
-                    black: {
-                        hex: "#000000",
-                        label: "Preto",
-                        questions: [
-                            {
-                                question: "Qual é a capital da França?",
-                                options: ["Madri", "Londres", "Paris", "Berlim", "Roma"],
-                                correct: 2
-                            }
-                        ]
-                    },
-                    orange: {
-                        hex: "#f97316",
-                        label: "Laranja",
-                        questions: [
-                            {
-                                question: "Qual fruto é fonte famosa de Vitamina C?",
-                                options: ["Maçã", "Laranja", "Banana", "Uva", "Pêra"],
-                                correct: 1
-                            }
-                        ]
-                    },
-                    green: {
-                        hex: "#22c55e",
-                        label: "Verde",
-                        questions: [
-                            {
-                                question: "Qual animal é conhecido como o 'Rei da Selva'?",
-                                options: ["Elefante", "Tigre", "Leão", "Urso", "Guepardo"],
-                                correct: 2
-                            },
-                            {
-                                question: "Qual gás os seres humanos precisam absorver na respiração? 1",
-                                options: ["Gás Carbônico", "Nitrogênio", "Oxigênio", "Hélio", "Metano"],
-                                correct: 2
-                            }
-                        ]
-                    },
-                    bege: {
-                        hex: "#DDC9A8",
-                        label: "Bege",
-                        questions: [
-                            {
-                                question: "A mistura de quais cores primárias forma o laranja?",
-                                options: [
-                                    "Azul e Amarelo",
-                                    "Vermelho e Amarelo",
-                                    "Vermelho e Azul",
-                                    "Verde e Vermelho",
-                                    "Branco e Preto"
-                                ],
-                                correct: 1
-                            }
-                        ]
-                    },
-                    pink: {
-                        hex: "#ec4899",
-                        label: "Rosa",
-                        questions: [
-                            {
-                                question: "Qual ave é famosa pela plumagem rosa por comer camarões?",
-                                options: ["Arara", "Flamingo", "Tucano", "Pardal", "Gavião"],
-                                correct: 1
-                            }
-                        ]
-                    },
-                    white: {
-                        hex: "#ffffff",
-                        label: "Branco",
-                        questions: [
-                            {
-                                question: "Qual é o oceano mais extenso do planeta Terra?",
-                                options: [
-                                    "Oceano Atlântico",
-                                    "Oceano Índico",
-                                    "Oceano Pacífico",
-                                    "Oceano Ártico",
-                                    "Oceano Antártico"
-                                ],
-                                correct: 2
-                            }
-                        ]
-                    }
+                    "black": { hex: "#111827", values: [6, 16], label: "Preto" },
+                    "orange": { hex: "#f97316", values: [5, 9, 11, 14], label: "Laranja" },
+                    "green": { hex: "#22c55e", values: [17], label: "Verde" },
+                    "bege": { hex: "#DDC9A8", values: [18], label: "Bege" },
+                    "pink": { hex: "#ec4899", values: [13], label: "Rosa" },
+                    "white": { hex: "#ffffff", values: [7, 10, 12], label: "Branco" }
                 },
-                grid: [ 
-                    ["white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white"],
-                    ["white", "black", "black", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "black", "black", "white"],
-                    ["white", "black", "orange", "black", "white", "white", "white", "white", "white", "white", "white", "white", "black", "orange", "black", "white"],
-                    ["white", "black", "orange", "orange", "black", "black", "white", "white", "white", "white", "white", "black", "orange", "orange", "black", "white"],
-                    ["white", "black", "orange", "orange", "orange", "black", "black", "black", "black", "black", "black", "orange", "orange", "orange", "black", "white"],
-                    ["white", "black", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "black", "white"],
-                    ["black", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "black"],
-                    ["black", "orange", "orange", "black", "black", "orange", "orange", "orange", "orange", "orange", "orange", "black", "black", "orange", "orange", "black"],
-                    ["black", "orange", "orange", "black", "green", "black", "orange", "orange", "orange", "orange", "black", "green", "black", "orange", "orange", "black"],
-                    ["black", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "black"],
-                    ["black", "bege", "bege", "orange", "orange", "orange", "orange", "pink", "pink", "orange", "orange", "orange", "orange", "bege", "bege", "black"],
-                    ["black", "orange", "bege", "bege", "orange", "orange", "orange", "black", "black", "orange", "orange", "orange", "bege", "bege", "orange", "black"],
-                    ["white", "black", "orange", "orange", "orange", "orange", "black", "orange", "orange", "black", "orange", "orange", "orange", "orange", "black", "white"],
-                    ["white", "white", "black", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "orange", "black", "white", "white"],
-                    ["white", "white", "white", "black", "black", "black", "black", "black", "black", "black", "black", "black", "black", "white", "white", "white"],
-                    ["white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white", "white"]
+                grid: [
+                    ["4+8", "7+5", "9+3", "8+2", "6+4", "1+6", "2+5", "5+5", "6+1", "8+4", "3+9", "4+3", "4+6", "6+6", "7+5", "5+7"],
+                    ["2+8", "9+7", "3+3", "9+1", "1+9", "7+3", "5+7", "9+3", "6+1", "4+8", "3+4", "3+4", "8+2", "4+2", "7+9", "2+8"],
+                    ["5+2", "8+8", "7+2", "1+5", "3+9", "6+6", "1+6", "3+7", "6+4", "2+8", "9+1", "1+9", "7+9", "4+7", "2+4", "1+6"],
+                    ["4+8", "5+1", "5+9", "9+2", "4+2", "8+2", "7+5", "8+4", "2+5", "9+3", "4+3", "7+9", "3+6", "2+9", "5+1", "4+8"],
+                    ["5+7", "3+3", "8+6", "6+3", "7+7", "9+7", "4+2", "9+7", "8+8", "4+2", "9+7", "3+2", "1+4", "2+3", "1+5", "6+1"],
+                    ["8+2", "3+3", "6+5", "1+4", "4+1", "9+5", "7+4", "6+8", "5+6", "4+1", "3+2", "8+1", "8+6", "1+4", "2+4", "6+6"],
+                    ["8+8", "2+3", "5+4", "9+2", "9+5", "3+8", "9+5", "2+7", "8+1", "9+2", "4+7", "2+3", "5+9", "1+4", "9+5", "3+3"],
+                    ["5+1", "6+5", "5+9", "8+8", "2+4", "4+5", "7+4", "3+2", "2+9", "7+7", "3+6", "7+9", "8+8", "8+6", "6+3", "8+8"],
+                    ["9+7", "5+6", "6+8", "9+7", "8+9", "4+2", "1+8", "3+8", "9+2", "2+3", "7+9", "9+8", "1+5", "7+2", "4+1", "5+1"],
+                    ["1+5", "5+4", "2+7", "2+3", "9+5", "1+4", "6+8", "8+3", "4+1", "4+5", "1+4", "6+5", "4+7", "8+1", "5+9", "3+3"],
+                    ["4+2", "9+9", "9+9", "3+6", "1+8", "5+9", "4+7", "8+5", "7+6", "6+3", "3+2", "1+4", "4+1", "9+9", "9+9", "2+4"],
+                    ["9+7", "7+2", "9+9", "9+9", "7+7", "7+4", "2+3", "1+5", "2+4", "8+6", "5+6", "9+2", "9+9", "9+9", "3+2", "9+7"],
+                    ["5+5", "5+1", "2+9", "5+4", "3+8", "3+8", "4+2", "7+2", "5+9", "7+9", "3+2", "4+1", "3+2", "9+5", "1+5", "3+9"],
+                    ["3+7", "3+4", "8+8", "6+8", "4+5", "6+8", "8+6", "8+1", "6+8", "1+4", "7+7", "8+3", "4+1", "9+7", "7+3", "5+2"],
+                    ["2+5", "7+5", "2+8", "8+8", "9+7", "5+1", "9+7", "3+3", "7+9", "3+3", "4+2", "2+4", "4+2", "1+6", "5+2", "8+4"],
+                    ["8+4", "4+3", "9+3", "5+7", "9+1", "6+1", "2+5", "3+4", "4+6", "6+4", "6+6", "3+9", "5+5", "1+9", "3+7", "7+5"]
                 ]
             }
         ];
 
-        /* APPLICATION STATE */
-        const SAVE_KEY = "pixel_quiz_color_save_v2";
+        /* ==========================================================================
+           3. APPLICATION STATE & PERSISTENCE
+           ========================================================================== */
+        const SAVE_KEY = "pixel_math_color_save_v0_1";
 
         let gameState = {
             progress: {},
             lastPlayedArtId: null,
-            powerups: {
-                autorespond: 1,
-                eliminate: 1
-            },
+            powerupCharges: 1,
             powerupOpProgress: 0,
             stats: {
                 totalTimeSeconds: 0,
@@ -942,30 +733,9 @@
             },
             settings: {
                 sound: true,
-                music: true,
-                vibration: true,
-                colorAnimation: true
+                vibration: true
             }
         };
-
-        /* AUDIO SYSTEM WITH MP3 FILES */
-        const mp3AudioCache = {};
-
-        // Mapeamento de arquivos MP3 do jogo
-        const MP3_FILES = {
-            pop: 'audio/pop.mp3',
-            powerup: 'audio/powerup.mp3',
-            card: 'audio/card.mp3',
-            error: 'audio/error.mp3',
-            win: 'audio/win.mp3',
-            bg_music: 'audio/bg_music.mp3'
-        };
-
-        // Elemento de áudio da música de fundo contínua nos níveis
-        const bgMusicAudio = new Audio();
-        bgMusicAudio.loop = true;
-        bgMusicAudio.volume = 0.35;
-        bgMusicAudio.src = MP3_FILES.bg_music;
 
         function loadSaveData() {
             try {
@@ -974,16 +744,13 @@
                     const parsed = JSON.parse(raw);
                     gameState = { ...gameState, ...parsed };
                     if (!gameState.progress) gameState.progress = {};
-                    if (!gameState.powerups) gameState.powerups = { autorespond: 1, eliminate: 1 };
-                    if (gameState.powerups.autorespond === undefined) gameState.powerups.autorespond = 1;
-                    if (gameState.powerups.eliminate === undefined) gameState.powerups.eliminate = 1;
+                    if (gameState.powerupCharges === undefined) gameState.powerupCharges = 1;
                     if (gameState.powerupOpProgress === undefined) gameState.powerupOpProgress = 0;
                     if (!gameState.stats) gameState.stats = { totalTimeSeconds: 0, totalClicks: 0, correctClicks: 0, totalErrors: 0, solvedEquations: 0, powerupsUsed: 0 };
-                    if (!gameState.settings) gameState.settings = { sound: true, music: true, vibration: true, colorAnimation: true };
-                    if (gameState.settings.music === undefined) gameState.settings.music = true;
+                    if (!gameState.settings) gameState.settings = { sound: true, vibration: true };
                 }
             } catch (e) {
-                console.error("Erro ao carregar dados:", e);
+                console.error("Erro ao carregar dados salvos:", e);
             }
         }
 
@@ -991,102 +758,98 @@
             try {
                 localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
             } catch (e) {
-                console.error("Erro ao salvar dados:", e);
+                console.error("Erro ao salvar progresso:", e);
             }
         }
 
-        function triggerEmptyPowerupEffect(type) {
-            const titleEl = document.getElementById('toast-powerup-title');
-            if (titleEl) {
-                if (type === 'eliminate') {
-                    titleEl.innerText = "Sem Power-up de Eliminar";
-                } else if (type === 'auto') {
-                    titleEl.innerText = "Sem Power-up Auto";
-                } else {
-                    titleEl.innerText = "Sem Power-ups!";
+        function evaluateMathExpr(expr) {
+            try {
+                const cleaned = expr.replace(/\s+/g, '');
+                const superscripts = {
+                    '⁰': 0, '¹': 1, '²': 2, '³': 3, '⁴': 4,
+                    '⁵': 5, '⁶': 6, '⁷': 7, '⁸': 8, '⁹': 9
+                };
+
+                const superChar = Object.keys(superscripts).find(char => cleaned.includes(char));
+                if (superChar) {
+                    const parts = cleaned.split(superChar);
+                    const base = parseFloat(parts[0]);
+                    const exponent = superscripts[superChar];
+                    return Math.pow(base, exponent);
                 }
-            }
 
-            const needed = 10 - (gameState.powerupOpProgress || 0);
-            const neededEl = document.getElementById('toast-powerup-needed');
-
-            if (neededEl) {
-                if (needed === 1) {
-                    neededEl.innerText = `Falta ${needed} acerto para ganhar o próximo power-up. Continue jogando.`;
-                } else {
-                    neededEl.innerText = `Faltam ${needed} acertos para ganhar o próximo power-up. Continue jogando.`;
+                if (cleaned.includes('+')) {
+                    const parts = cleaned.split('+');
+                    return parseFloat(parts[0]) + parseFloat(parts[1]);
+                } else if (cleaned.includes('-')) {
+                    const parts = cleaned.split('-');
+                    return parseFloat(parts[0]) - parseFloat(parts[1]);
+                } else if (cleaned.includes('*')) {
+                    const parts = cleaned.split('*');
+                    return parseFloat(parts[0]) * parseFloat(parts[1]);
+                } else if (cleaned.includes('x')) {
+                    const parts = cleaned.split('x');
+                    return parseFloat(parts[0]) * parseFloat(parts[1]);
+                } else if (cleaned.includes('/')) {
+                    const parts = cleaned.split('/');
+                    return parseFloat(parts[0]) / parseFloat(parts[1]);
+                } else if (cleaned.includes('÷')) {
+                    const parts = cleaned.split('÷');
+                    return parseFloat(parts[0]) / parseFloat(parts[1]);
+                } else if (cleaned.includes('^')) {
+                    const parts = cleaned.split('^');
+                    return Math.pow(parseFloat(parts[0]), parseFloat(parts[1]));
                 }
+
+                return parseFloat(cleaned);
+            } catch (e) {
+                return NaN;
             }
-
-            document.body.classList.remove('animate-shake-screen');
-            void document.body.offsetWidth;
-            document.body.classList.add('animate-shake-screen');
-
-            playSound('error');
-            triggerVibration();
-
-            const toast = document.getElementById('toast-powerup-empty');
-            toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-6');
-            toast.classList.add('opacity-100', 'translate-y-0');
-
-            if (window.emptyPowerupToastTimer) clearTimeout(window.emptyPowerupToastTimer);
-            window.emptyPowerupToastTimer = setTimeout(() => {
-                toast.classList.remove('opacity-100', 'translate-y-0');
-                toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-6');
-            }, 3000);
         }
 
-        /* REPRODUÇÃO DE SONS MP3 */
         function playSound(type) {
             if (!gameState.settings.sound) return;
-            const src = MP3_FILES[type];
-            if (!src) return;
-
             try {
-                // Instancia novo objeto para permitir sons simultâneos rápidos
-                const audio = new Audio(src);
-                audio.volume = 0.8;
-                audio.play().catch(e => {
-                    // Trata silenciamento do navegador antes do primeiro clique do usuário
-                });
-            } catch (e) {
-                console.warn("Erro ao tocar áudio MP3:", e);
-            }
-        }
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
 
-        /* GERENCIAMENTO DA MÚSICA DE FUNDO NO LEVEL */
-        function updateLevelMusicState() {
-            const musicBtn = document.getElementById('game-music-btn');
-            const musicIcon = document.getElementById('game-music-icon');
-
-            if (gameState.settings.music) {
-                if (musicBtn) {
-                    musicBtn.classList.remove('text-slate-500', 'line-through');
-                    musicBtn.classList.add('text-purple-400');
+                if (type === 'pop') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.08);
+                } else if (type === 'powerup') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.15);
+                } else if (type === 'win') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+                    osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.5);
                 }
-                if (musicIcon) {
-                    musicIcon.className = "fa-solid fa-music text-xs";
-                }
-                // Se estiver na tela de gameplay, toca a música
-                const canvasSec = document.getElementById('sec-canvas-game');
-                if (canvasSec && !canvasSec.classList.contains('hidden')) {
-                    bgMusicAudio.play().catch(e => {});
-                }
-            } else {
-                if (musicBtn) {
-                    musicBtn.classList.remove('text-purple-400');
-                    musicBtn.classList.add('text-slate-500');
-                }
-                if (musicIcon) {
-                    musicIcon.className = "fa-solid fa-volume-xmark text-xs";
-                }
-                bgMusicAudio.pause();
-            }
-        }
-
-        function stopLevelMusic() {
-            bgMusicAudio.pause();
-            bgMusicAudio.currentTime = 0;
+            } catch (e) {}
         }
 
         function triggerVibration() {
@@ -1095,7 +858,9 @@
             }
         }
 
-        /* CANVAS ENGINE & CONTROLLER */
+        /* ==========================================================================
+           4. GAME CANVAS ENGINE & MATH CONTROLLER
+           ========================================================================== */
         let currentArt = null;
         let selectedColorKey = null;
         let scale = 20;
@@ -1105,25 +870,14 @@
         let dragStartX = 0;
         let dragStartY = 0;
         let playTimerInterval = null;
-        let isPaintingAnimating = false;
+
+        let isHighlightActive = false;
+        let powerupTimeRemaining = 0;
+        let powerupTimerInterval = null;
 
         const canvas = document.getElementById('paint-canvas');
         const ctx = canvas.getContext('2d');
         const container = document.getElementById('canvas-container');
-
-        // Retorna a lista ordenada de pixels de uma determinada cor na grade
-        function getColorPixelsList(colorKey) {
-            if (!currentArt) return [];
-            const pixels = [];
-            for (let r = 0; r < currentArt.height; r++) {
-                for (let c = 0; c < currentArt.width; c++) {
-                    if (currentArt.grid[r][c] === colorKey) {
-                        pixels.push({ c, r, posKey: `${c},${r}` });
-                    }
-                }
-            }
-            return pixels;
-        }
 
         function startPainting(artId) {
             currentArt = ARTWORKS.find(a => a.id === artId);
@@ -1134,22 +888,19 @@
                     paintedPixels: {},
                     completed: false,
                     timeSpent: 0,
-                    completedCount: 0,
-                    answeredQuestions: {}
+                    completedCount: 0
                 };
             }
-            if (!gameState.progress[artId].answeredQuestions) {
-                gameState.progress[artId].answeredQuestions = {};
-            }
-
             gameState.lastPlayedArtId = artId;
             saveGameData();
 
             document.getElementById('game-drawing-title').innerText = currentArt.title;
             const cat = CATEGORIES.find(c => c.id === currentArt.category);
-            document.getElementById('game-category-tag').innerText = cat ? cat.name : "Quiz";
+            document.getElementById('game-category-tag').innerText = cat ? cat.name : "Matemática";
 
             showSection('sec-canvas-game');
+
+            deactivateHighlightPowerUp();
 
             scale = Math.min(
                 Math.floor((container.clientWidth * 0.8) / currentArt.width),
@@ -1165,18 +916,73 @@
             updatePowerUpUI();
             renderCanvas();
             startTimer();
-            updateLevelMusicState();
+        }
+
+        function activateHighlightPowerUp() {
+            if (isHighlightActive) return;
+
+            if (gameState.powerupCharges <= 0) {
+                document.getElementById('modal-powerup-progress-text').innerText = `${gameState.powerupOpProgress} / 500 contas`;
+                document.getElementById('modal-powerup-progress-bar').style.width = `${Math.floor((gameState.powerupOpProgress / 500) * 100)}%`;
+                document.getElementById('modal-powerup-needed-text').innerText = `Faltam ${500 - gameState.powerupOpProgress} contas corretas para o próximo Power-Up!`;
+                document.getElementById('no-powerup-modal').classList.remove('hidden');
+                return;
+            }
+
+            gameState.powerupCharges--;
+            gameState.stats.powerupsUsed = (gameState.stats.powerupsUsed || 0) + 1;
+            saveGameData();
+
+            isHighlightActive = true;
+            powerupTimeRemaining = 60;
+
+            playSound('powerup');
+            triggerVibration();
+
+            document.getElementById('powerup-status-bar').classList.remove('hidden');
+            document.getElementById('game-hint-btn').classList.add('powerup-active-glow');
+
+            updatePowerUpUI();
+            renderCanvas();
+
+            clearInterval(powerupTimerInterval);
+            powerupTimerInterval = setInterval(() => {
+                powerupTimeRemaining--;
+                const secStr = powerupTimeRemaining.toString().padStart(2, '0');
+                document.getElementById('powerup-active-timer').innerText = `00:${secStr}`;
+
+                if (powerupTimeRemaining <= 0) {
+                    deactivateHighlightPowerUp();
+                }
+            }, 1000);
+        }
+
+        function deactivateHighlightPowerUp() {
+            isHighlightActive = false;
+            powerupTimeRemaining = 0;
+            clearInterval(powerupTimerInterval);
+
+            document.getElementById('powerup-status-bar').classList.add('hidden');
+            document.getElementById('game-hint-btn').classList.remove('powerup-active-glow');
+
+            updatePowerUpUI();
+            renderCanvas();
         }
 
         function updatePowerUpUI() {
-            document.getElementById('home-autorespond-count').innerText = gameState.powerups.autorespond;
-            document.getElementById('home-eliminate-count').innerText = gameState.powerups.eliminate;
-            document.getElementById('powerup-badge-autorespond').innerText = gameState.powerups.autorespond;
-            document.getElementById('powerup-badge-eliminate').innerText = gameState.powerups.eliminate;
+            document.getElementById('powerup-badge-count').innerText = gameState.powerupCharges;
+            document.getElementById('home-powerup-count').innerText = gameState.powerupCharges;
             
-            const pct = Math.floor((gameState.powerupOpProgress / 10) * 100);
-            document.getElementById('home-powerup-progress-text').innerText = `${gameState.powerupOpProgress} / 10 acertos`;
+            const pct = Math.floor((gameState.powerupOpProgress / 500) * 100);
+            document.getElementById('home-powerup-progress-text').innerText = `${gameState.powerupOpProgress} / 500 contas`;
             document.getElementById('home-powerup-progress-bar').style.width = `${pct}%`;
+
+            const btnLabel = document.getElementById('powerup-btn-label');
+            if (isHighlightActive) {
+                btnLabel.innerText = "ATIVO 1 MIN";
+            } else {
+                btnLabel.innerText = "REVELAR 1 MIN";
+            }
         }
 
         function refreshPalette() {
@@ -1190,13 +996,16 @@
 
             for (let r = 0; r < currentArt.height; r++) {
                 for (let c = 0; c < currentArt.width; c++) {
-                    const colorKey = currentArt.grid[r][c];
+                    const expr = currentArt.grid[r][c];
+                    const val = evaluateMathExpr(expr);
                     const posKey = `${c},${r}`;
 
                     if (!artProg.paintedPixels[posKey]) {
-                        if (remainingCounts[colorKey] !== undefined) {
-                            remainingCounts[colorKey]++;
-                        }
+                        Object.entries(currentArt.colorMap).forEach(([cKey, colorDef]) => {
+                            if (colorDef.values.includes(val)) {
+                                remainingCounts[cKey] = (remainingCounts[cKey] || 0) + 1;
+                            }
+                        });
                     }
                 }
             }
@@ -1207,7 +1016,7 @@
             const availableKeys = Object.keys(currentArt.colorMap).filter(k => remainingCounts[k] > 0);
 
             if (availableKeys.length === 0) {
-                paletteContainer.innerHTML = `<span class="text-xs text-emerald-400 font-bold px-4 py-2"><i class="fa-solid fa-check-circle mr-1"></i> Todos os quadros foram pintados!</span>`;
+                paletteContainer.innerHTML = `<span class="text-xs text-emerald-400 font-bold px-4 py-2"><i class="fa-solid fa-check-circle mr-1"></i> Todos os cálculos foram resolvidos!</span>`;
                 checkCompletion();
                 return;
             }
@@ -1221,25 +1030,27 @@
                 if (count === 0 && selectedColorKey !== colorKey) return;
 
                 const pill = document.createElement('button');
+                const isSelected = selectedColorKey === colorKey;
 
-                pill.className = `flex-shrink-0 flex items-center space-x-2 px-3.5 py-2 rounded-2xl border border-slate-700/80 bg-slate-900/90 text-xs font-bold transition-all active:scale-95 shadow-md`;
+                pill.className = `flex-shrink-0 flex items-center space-x-2 px-3.5 py-2 rounded-2xl border ${isSelected ? 'border-sky-400 ring-2 ring-sky-400/50 scale-105 bg-slate-800' : 'border-slate-700/80 bg-slate-900/90'} text-xs font-bold transition-all active:scale-95 shadow-md`;
                 
+                const formattedVals = colorDef.values.join(', ');
+
                 pill.innerHTML = `
                     <div class="w-5 h-5 rounded-full shadow-inner border border-black/30 shrink-0" style="background-color: ${colorDef.hex}"></div>
                     <div class="flex flex-col text-left">
                         <span class="text-[11px] text-slate-100 font-extrabold leading-none">${colorDef.label}</span>
+                        <span class="text-[9px] text-sky-300 font-mono leading-none mt-1">[${formattedVals}]</span>
                     </div>
-                    <span id="pill-count-${colorKey}" class="text-[10px] font-bold bg-slate-800 px-1.5 py-0.5 rounded-md border border-slate-700 text-slate-300 ml-1">${count}</span>
+                    <span class="text-[10px] font-bold bg-slate-800 px-1.5 py-0.5 rounded-md border border-slate-700 text-slate-300 ml-1">${count}</span>
                 `;
 
                 pill.onclick = () => {
-                    if (isPaintingAnimating) return;
                     selectedColorKey = colorKey;
                     refreshPalette();
                     updateActiveBadge();
                     renderCanvas();
                     triggerVibration();
-                    openQuizModalForColor(colorKey);
                 };
 
                 paletteContainer.appendChild(pill);
@@ -1253,6 +1064,9 @@
             if (!currentArt || !selectedColorKey) return;
             const colorDef = currentArt.colorMap[selectedColorKey];
             if (!colorDef) return;
+
+            document.getElementById('active-color-dot').style.backgroundColor = colorDef.hex;
+            document.getElementById('active-color-text').innerText = `${colorDef.label} [${colorDef.values.join(', ')}]`;
         }
 
         function updateProgressText() {
@@ -1273,6 +1087,7 @@
             ctx.imageSmoothingEnabled = false;
 
             const artProg = gameState.progress[currentArt.id];
+            const activeColorDef = selectedColorKey ? currentArt.colorMap[selectedColorKey] : null;
 
             for (let r = 0; r < currentArt.height; r++) {
                 for (let c = 0; c < currentArt.width; c++) {
@@ -1281,7 +1096,8 @@
 
                     if (x + scale < 0 || x > canvas.width || y + scale < 0 || y > canvas.height) continue;
 
-                    const colorKey = currentArt.grid[r][c];
+                    const expr = currentArt.grid[r][c];
+                    const val = evaluateMathExpr(expr);
                     const key = `${c},${r}`;
                     const paintedColorKey = artProg.paintedPixels[key];
 
@@ -1294,376 +1110,31 @@
                     } else {
                         ctx.fillStyle = "#1e293b";
                         ctx.fillRect(x, y, scale, scale);
-                        ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-                        ctx.strokeRect(x, y, scale, scale);
+
+                        if (isHighlightActive && activeColorDef && activeColorDef.values.includes(val)) {
+                            ctx.fillStyle = "rgba(245, 158, 11, 0.45)";
+                            ctx.fillRect(x, y, scale, scale);
+                            ctx.strokeStyle = "#f59e0b";
+                            ctx.strokeRect(x, y, scale, scale);
+                        } else {
+                            ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+                            ctx.strokeRect(x, y, scale, scale);
+                        }
+
+                        if (scale >= 14) {
+                            ctx.fillStyle = (isHighlightActive && activeColorDef && activeColorDef.values.includes(val)) ? "#fbbf24" : "#94a3b8";
+                            const fontSize = Math.max(7, Math.min(scale * 0.32, (scale / expr.length) * 1.5));
+                            ctx.font = `700 ${fontSize}px Inter, sans-serif`;
+                            ctx.textAlign = "center";
+                            ctx.textBaseline = "middle";
+                            ctx.fillText(expr, x + scale / 2, y + scale / 2);
+                        }
                     }
                 }
             }
         }
 
-        /* QUIZ MODAL & MULTI-QUESTION NAVIGATION LOGIC */
-        let currentQuestionObj = null;
-        let quizTriggerMode = 'color';
-        let activeQuestionsList = [];
-        let activeQuestionIndex = 0;
-
-        function openQuizModalForColor(colorKey, targetPixelQuestionIndex = null) {
-            const colorDef = currentArt.colorMap[colorKey];
-            if (!colorDef || !colorDef.questions || colorDef.questions.length === 0) return;
-
-            activeQuestionsList = colorDef.questions;
-
-            document.getElementById('quiz-modal-color-dot').style.backgroundColor = colorDef.hex;
-            document.getElementById('quiz-modal-color-name').innerText = colorDef.label;
-
-            const navContainer = document.getElementById('quiz-modal-nav-container');
-
-            if (targetPixelQuestionIndex !== null) {
-                // Disparado pelo clique num pixel individual no Canvas
-                quizTriggerMode = 'pixel';
-                activeQuestionIndex = targetPixelQuestionIndex % activeQuestionsList.length;
-
-                // Se houver mais de 1 pergunta na cor, exibe a barra de navegação com "Pergunta y de x"
-                if (activeQuestionsList.length > 1) {
-                    navContainer.classList.remove('hidden');
-                    navContainer.classList.add('flex');
-                } else {
-                    navContainer.classList.add('hidden');
-                    navContainer.classList.remove('flex');
-                }
-            } else {
-                // Disparado pelo clique na cor na barra inferior (Paleta)
-                quizTriggerMode = 'color';
-                activeQuestionIndex = 0;
-                if (activeQuestionsList.length > 1) {
-                    navContainer.classList.remove('hidden');
-                    navContainer.classList.add('flex');
-                } else {
-                    navContainer.classList.add('hidden');
-                    navContainer.classList.remove('flex');
-                }
-            }
-
-            renderQuestionInModal();
-            const quizModal = document.getElementById('quiz-modal');
-            quizModal.classList.remove('hidden');
-
-            quizModal.classList.add('pointer-events-none');
-            setTimeout(() => {
-                quizModal.classList.remove('pointer-events-none');
-            }, 200);
-        }
-
-        function renderQuestionInModal() {
-            currentQuestionObj = activeQuestionsList[activeQuestionIndex];
-
-            const artProg = gameState.progress[currentArt.id];
-            const answeredMap = artProg.answeredQuestions[selectedColorKey] || {};
-            const isAlreadyAnswered = !!answeredMap[activeQuestionIndex];
-
-            // Atualiza indicadores de navegação por seta
-            if (activeQuestionsList.length > 1) {
-                document.getElementById('quiz-nav-indicator').innerText = `Pergunta ${activeQuestionIndex + 1} de ${activeQuestionsList.length}`;
-                document.getElementById('quiz-nav-prev').disabled = (activeQuestionIndex === 0);
-                document.getElementById('quiz-nav-next').disabled = (activeQuestionIndex === activeQuestionsList.length - 1);
-            }
-
-            document.getElementById('quiz-modal-question').innerText = currentQuestionObj.question;
-
-            const optionsContainer = document.getElementById('quiz-modal-options');
-            optionsContainer.innerHTML = '';
-            
-            document.getElementById('card-draw-container').classList.add('hidden');
-            const feedbackEl = document.getElementById('quiz-modal-feedback');
-            feedbackEl.className = "hidden p-3 rounded-xl text-xs font-bold text-center";
-
-            const letters = ['A', 'B', 'C', 'D', 'E'];
-
-            currentQuestionObj.options.forEach((optText, index) => {
-                const btn = document.createElement('button');
-                btn.id = `quiz-option-btn-${index}`;
-                
-                if (isAlreadyAnswered) {
-                    if (index === currentQuestionObj.correct) {
-                        btn.className = "w-full text-left bg-emerald-950/80 border-2 border-emerald-500 text-emerald-200 p-3 rounded-xl text-xs font-bold flex items-center justify-between shadow-lg";
-                        btn.innerHTML = `
-                            <div class="flex items-center space-x-3">
-                                <span class="w-6 h-6 rounded-lg bg-emerald-800 border border-emerald-500 flex items-center justify-center font-bold text-emerald-100 shrink-0 text-[11px]">${letters[index]}</span>
-                                <span class="flex-1 leading-snug">${optText}</span>
-                            </div>
-                            <span class="text-[10px] bg-emerald-500 text-slate-950 font-black px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1 shrink-0"><i class="fa-solid fa-check"></i> Correta</span>
-                        `;
-                    } else {
-                        btn.className = "w-full text-left bg-slate-900/50 border border-slate-800 text-slate-500 p-3 rounded-xl text-xs font-medium flex items-center space-x-3 opacity-60";
-                        btn.innerHTML = `
-                            <span class="w-6 h-6 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center font-bold text-slate-600 shrink-0 text-[11px]">${letters[index]}</span>
-                            <span class="flex-1 leading-snug">${optText}</span>
-                        `;
-                    }
-                    btn.disabled = true;
-                } else {
-                    btn.className = "w-full text-left bg-slate-800/90 border border-slate-700 text-slate-200 p-3 rounded-xl text-xs font-medium flex items-center space-x-3 transition hover:bg-slate-700/90 active:scale-[0.98]";
-                    btn.innerHTML = `
-                        <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center font-bold text-sky-400 shrink-0 text-[11px]">${letters[index]}</span>
-                        <span class="flex-1 leading-snug">${optText}</span>
-                    `;
-                    btn.onclick = () => handleQuizAnswer(index);
-                }
-
-                optionsContainer.appendChild(btn);
-            });
-
-            const autoBtn = document.getElementById('powerup-btn-autorespond');
-            const elimBtn = document.getElementById('powerup-btn-eliminate');
-
-            if (isAlreadyAnswered) {
-                feedbackEl.className = "p-3 rounded-xl text-xs font-bold text-center bg-sky-500/20 text-sky-300 border border-sky-500/40";
-                feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Esta pergunta já foi respondida com sucesso!`;
-                feedbackEl.classList.remove('hidden');
-                autoBtn.disabled = true;
-                elimBtn.disabled = true;
-                autoBtn.classList.add('opacity-50', 'pointer-events-none');
-                elimBtn.classList.add('opacity-50', 'pointer-events-none');
-            } else {
-                autoBtn.disabled = false;
-                elimBtn.disabled = false;
-                autoBtn.classList.remove('opacity-50', 'pointer-events-none');
-                elimBtn.classList.remove('opacity-50', 'pointer-events-none');
-            }
-
-            updatePowerUpUI();
-        }
-
-        /* Handlers das Setas de Navegação */
-        document.getElementById('quiz-nav-prev').onclick = () => {
-            if (activeQuestionIndex > 0) {
-                activeQuestionIndex--;
-                playSound('pop');
-                triggerVibration();
-                renderQuestionInModal();
-            }
-        };
-
-        document.getElementById('quiz-nav-next').onclick = () => {
-            if (activeQuestionIndex < activeQuestionsList.length - 1) {
-                activeQuestionIndex++;
-                playSound('pop');
-                triggerVibration();
-                renderQuestionInModal();
-            }
-        };
-
-        /* POWERUP: AUTORESPOND */
-        document.getElementById('powerup-btn-autorespond').onclick = () => {
-            if (gameState.powerups.autorespond <= 0) {
-                triggerEmptyPowerupEffect('auto');
-                return;
-            }
-
-            gameState.powerups.autorespond--;
-            gameState.stats.powerupsUsed = (gameState.stats.powerupsUsed || 0) + 1;
-            saveGameData();
-            updatePowerUpUI();
-
-            const correctIdx = currentQuestionObj.correct;
-            const targetBtn = document.getElementById(`quiz-option-btn-${correctIdx}`);
-            if (targetBtn) {
-                targetBtn.classList.add('autorespond-glow', 'border-emerald-400', 'bg-emerald-950/80');
-            }
-
-            playSound('powerup');
-            triggerVibration();
-
-            setTimeout(() => {
-                handleQuizAnswer(correctIdx);
-            }, 600);
-        };
-
-        /* POWERUP: ELIMINATE WRONG OPTIONS (WITH CARD DRAW) */
-        document.getElementById('powerup-btn-eliminate').onclick = () => {
-            if (gameState.powerups.eliminate <= 0) {
-                triggerEmptyPowerupEffect('eliminate');
-                return;
-            }
-
-            const drawContainer = document.getElementById('card-draw-container');
-            if (!drawContainer.classList.contains('hidden')) return;
-
-            const totalOptions = currentQuestionObj.options.length;
-            const wrongCount = totalOptions - 1;
-
-            const cardsWrapper = document.getElementById('cards-wrapper');
-            cardsWrapper.innerHTML = '';
-
-            let possibleValues = [];
-            for (let i = 1; i <= wrongCount; i++) {
-                possibleValues.push(i);
-            }
-            possibleValues.sort(() => Math.random() - 0.5);
-
-            possibleValues.forEach((val) => {
-                const card = document.createElement('div');
-                card.className = "w-14 h-20 perspective-1000 cursor-pointer active:scale-95 transition";
-                card.innerHTML = `
-                    <div class="card-inner">
-                        <div class="card-front bg-gradient-to-tr from-indigo-600 to-sky-500 border-2 border-indigo-300 flex items-center justify-center text-white shadow-md">
-                            <i class="fa-solid fa-question text-lg font-black"></i>
-                        </div>
-                        <div class="card-back bg-slate-800 border-2 border-indigo-400 flex flex-col items-center justify-center text-indigo-300 shadow-md">
-                            <span class="text-xs font-bold">Eliminar</span>
-                            <span class="text-lg font-black text-white">${val}</span>
-                        </div>
-                    </div>
-                `;
-
-                card.onclick = () => {
-                    playSound('card');
-                    triggerVibration();
-
-                    const inner = card.querySelector('.card-inner');
-                    inner.classList.add('flipped');
-
-                    gameState.powerups.eliminate--;
-                    gameState.stats.powerupsUsed = (gameState.stats.powerupsUsed || 0) + 1;
-                    saveGameData();
-                    updatePowerUpUI();
-
-                    setTimeout(() => {
-                        executeOptionElimination(val);
-                        drawContainer.classList.add('hidden');
-                    }, 800);
-                };
-
-                cardsWrapper.appendChild(card);
-            });
-
-            drawContainer.classList.remove('hidden');
-        };
-
-        function executeOptionElimination(numberToEliminate) {
-            const correctIdx = currentQuestionObj.correct;
-            const wrongIndices = [];
-
-            currentQuestionObj.options.forEach((_, idx) => {
-                if (idx !== correctIdx) {
-                    const btn = document.getElementById(`quiz-option-btn-${idx}`);
-                    if (btn && !btn.classList.contains('animate-eliminate')) {
-                        wrongIndices.push(idx);
-                    }
-                }
-            });
-
-            wrongIndices.sort(() => Math.random() - 0.5);
-            const toRemove = wrongIndices.slice(0, numberToEliminate);
-
-            toRemove.forEach(idx => {
-                const btn = document.getElementById(`quiz-option-btn-${idx}`);
-                if (btn) {
-                    btn.classList.add('animate-eliminate');
-                    btn.disabled = true;
-                }
-            });
-
-            const feedbackEl = document.getElementById('quiz-modal-feedback');
-            feedbackEl.className = "p-2.5 rounded-xl text-xs font-bold text-center bg-indigo-500/20 text-indigo-300 border border-indigo-500/40";
-            feedbackEl.innerHTML = `<i class="fa-solid fa-eye-slash mr-1"></i> ${toRemove.length} alternativa(s) errada(s) eliminada(s)!`;
-            feedbackEl.classList.remove('hidden');
-        }
-
-        function handleQuizAnswer(selectedIndex) {
-            if (!currentQuestionObj) return;
-
-            const isCorrect = (selectedIndex === currentQuestionObj.correct);
-            const feedbackEl = document.getElementById('quiz-modal-feedback');
-            gameState.stats.totalClicks++;
-
-            if (isCorrect) {
-                gameState.stats.correctClicks++;
-                gameState.stats.solvedEquations++;
-
-                // Registra esta pergunta específica da cor como respondida
-                const artProg = gameState.progress[currentArt.id];
-                if (!artProg.answeredQuestions[selectedColorKey]) {
-                    artProg.answeredQuestions[selectedColorKey] = {};
-                }
-                artProg.answeredQuestions[selectedColorKey][activeQuestionIndex] = true;
-
-                gameState.powerupOpProgress++;
-                if (gameState.powerupOpProgress >= 10) {
-                    if (Math.random() > 0.5) {
-                        gameState.powerups.autorespond++;
-                    } else {
-                        gameState.powerups.eliminate++;
-                    }
-                    gameState.powerupOpProgress = 0;
-                    playSound('powerup');
-                }
-
-                playSound('pop');
-                triggerVibration();
-
-                feedbackEl.className = "p-3 rounded-xl text-xs font-bold text-center bg-emerald-500/20 text-emerald-400 border border-emerald-500/40";
-                feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Resposta Correta! Colorindo pixel...`;
-                feedbackEl.classList.remove('hidden');
-
-                setTimeout(() => {
-                    document.getElementById('quiz-modal').classList.add('hidden');
-                    
-                    const totalQuestionsForColor = (currentArt.colorMap[selectedColorKey].questions || []).length;
-
-                    // Se tiver apenas 1 pergunta para essa cor, dispara a animação gradual da cor inteira
-                    if (totalQuestionsForColor === 1) {
-                        paintColorPixels(selectedColorKey);
-                    } else {
-                        paintSpecificQuestionPixel(selectedColorKey, activeQuestionIndex);
-                        refreshPalette();
-                        updatePowerUpUI();
-                    }
-                }, 600);
-
-            } else {
-                gameState.stats.totalErrors++;
-                feedbackEl.className = "p-3 rounded-xl text-xs font-bold text-center bg-rose-500/20 text-rose-400 border border-rose-500/40";
-                feedbackEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> Você errou! Tente novamente.`;
-                feedbackEl.classList.remove('hidden');
-
-                playSound('error');
-                triggerVibration();
-                saveGameData();
-            }
-        }
-
-        function paintSpecificQuestionPixel(colorKey, questionIdx) {
-            if (!currentArt || !colorKey) return;
-            const artProg = gameState.progress[currentArt.id];
-            const allColorPixels = getColorPixelsList(colorKey);
-
-            if (allColorPixels.length === 0) return;
-
-            // Determina quais pixels pertencem a esta pergunta dividindo em blocos iguais
-            const totalQuestions = (currentArt.colorMap[colorKey].questions || []).length;
-            const pixelsPerQuestion = Math.ceil(allColorPixels.length / totalQuestions);
-            
-            const startIdx = questionIdx * pixelsPerQuestion;
-            const endIdx = Math.min(startIdx + pixelsPerQuestion, allColorPixels.length);
-
-            const targetPixels = allColorPixels.slice(startIdx, endIdx);
-
-            targetPixels.forEach(pixel => {
-                artProg.paintedPixels[pixel.posKey] = colorKey;
-            });
-
-            saveGameData();
-            renderCanvas();
-            refreshPalette();
-            updatePowerUpUI();
-        }
-
-        document.getElementById('quiz-modal-close-btn').onclick = () => {
-            document.getElementById('quiz-modal').classList.add('hidden');
-        };
-
-        /* Touch & Pan Controls */
+        /* Interactive Canvas Touch & Pointer Event Handlers */
         let pointerDown = false;
         let activePointers = new Map();
 
@@ -1697,8 +1168,6 @@
 
             if (activePointers.size === 0) pointerDown = false;
 
-            if (e.target !== canvas) return;
-
             if (!isDragging && startPos) {
                 handleCanvasClick(startPos.x, startPos.y);
             }
@@ -1707,8 +1176,15 @@
         container.addEventListener('pointerup', handlePointerUpOrCancel);
         container.addEventListener('pointercancel', handlePointerUpOrCancel);
 
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+            scale = Math.min(Math.max(10, scale * zoomFactor), 80);
+            renderCanvas();
+        }, { passive: false });
+
         function handleCanvasClick(clientX, clientY) {
-            if (!currentArt || isPaintingAnimating) return;
+            if (!currentArt || !selectedColorKey) return;
 
             const rect = canvas.getBoundingClientRect();
             const x = clientX - rect.left;
@@ -1719,19 +1195,41 @@
 
             if (col < 0 || col >= currentArt.width || row < 0 || row >= currentArt.height) return;
 
-            const clickedColor = currentArt.grid[row][col];
-            const allColorPixels = getColorPixelsList(clickedColor);
-            
-            // Descobre o índice da pergunta associada a este pixel específico
-            const pixelSubIndex = allColorPixels.findIndex(p => p.c === col && p.r === row);
-            const totalQuestions = (currentArt.colorMap[clickedColor].questions || []).length;
-            const pixelsPerQuestion = Math.ceil(allColorPixels.length / totalQuestions);
-            
-            const targetQuestionIndex = pixelSubIndex !== -1 ? Math.floor(pixelSubIndex / pixelsPerQuestion) : 0;
+            const expr = currentArt.grid[row][col];
+            const val = evaluateMathExpr(expr);
+            const colorDef = currentArt.colorMap[selectedColorKey];
+            const posKey = `${col},${row}`;
+            const artProg = gameState.progress[currentArt.id];
 
-            selectedColorKey = clickedColor;
-            refreshPalette();
-            openQuizModalForColor(clickedColor, targetQuestionIndex);
+            gameState.stats.totalClicks++;
+
+            if (colorDef && colorDef.values.includes(val)) {
+                if (!artProg.paintedPixels[posKey]) {
+                    artProg.paintedPixels[posKey] = selectedColorKey;
+                    gameState.stats.correctClicks++;
+                    gameState.stats.solvedEquations++;
+
+                    gameState.powerupOpProgress++;
+                    if (gameState.powerupOpProgress >= 500) {
+                        gameState.powerupCharges++;
+                        gameState.powerupOpProgress = 0;
+                        playSound('powerup');
+                    }
+
+                    playSound('pop');
+                    triggerVibration();
+
+                    refreshPalette();
+                    updatePowerUpUI();
+                    renderCanvas();
+                    saveGameData();
+                }
+            } else {
+                gameState.stats.totalErrors++;
+                playSound('error');
+                triggerVibration();
+                saveGameData();
+            }
         }
 
         function startTimer() {
@@ -1757,12 +1255,11 @@
 
             artProg.completed = true;
             artProg.completedCount = (artProg.completedCount || 0) + 1;
+            deactivateHighlightPowerUp();
             saveGameData();
 
             playSound('win');
             confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-
-            renderThumbnail(document.getElementById('complete-art-canvas'), currentArt);
 
             document.getElementById('complete-art-title').innerText = currentArt.title;
             const sec = artProg.timeSpent;
@@ -1776,7 +1273,7 @@
             document.getElementById('complete-modal').classList.remove('hidden');
         }
 
-        /* Zoom Buttons */
+        /* Zoom Controls */
         document.getElementById('btn-zoom-in').onclick = () => { scale = Math.min(80, scale * 1.25); renderCanvas(); };
         document.getElementById('btn-zoom-out').onclick = () => { scale = Math.max(10, scale * 0.8); renderCanvas(); };
         document.getElementById('btn-zoom-reset').onclick = () => {
@@ -1792,22 +1289,24 @@
             }
         };
 
-        /* Level Music Button inside Gameplay */
-        document.getElementById('game-music-btn').onclick = () => {
-            gameState.settings.music = !gameState.settings.music;
-            document.getElementById('setting-music').checked = gameState.settings.music;
-            saveGameData();
-            updateLevelMusicState();
-            triggerVibration();
+        /* POWER-UP BUTTON CLICK */
+        document.getElementById('game-hint-btn').onclick = () => {
+            activateHighlightPowerUp();
+        };
+
+        document.getElementById('no-powerup-close-btn').onclick = () => {
+            document.getElementById('no-powerup-modal').classList.add('hidden');
         };
 
         document.getElementById('game-back-btn').onclick = () => {
             clearInterval(playTimerInterval);
-            stopLevelMusic();
+            deactivateHighlightPowerUp();
             showSection('sec-home');
         };
 
-        /* THUMBNAIL RENDERER */
+        /* ==========================================================================
+           5. THUMBNAIL PREVIEW RENDERER
+           ========================================================================== */
         function renderThumbnail(canvasEl, artwork) {
             if (!canvasEl || !artwork) return;
             const tCtx = canvasEl.getContext('2d');
@@ -1833,7 +1332,9 @@
             }
         }
 
-        /* SPA NAVIGATION & VIEWS */
+        /* ==========================================================================
+           6. SPA NAVIGATION & VIEW UPDATES
+           ========================================================================== */
         function showSection(sectionId) {
             document.querySelectorAll('.spa-section').forEach(sec => sec.classList.add('hidden'));
             document.getElementById(sectionId).classList.remove('hidden');
@@ -1843,11 +1344,14 @@
                 bottomNav.classList.add('hidden');
             } else {
                 bottomNav.classList.remove('hidden');
-                stopLevelMusic();
             }
 
             document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.toggle('active', item.getAttribute('data-target') === sectionId);
+                if (item.getAttribute('data-target') === sectionId) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
             });
 
             if (sectionId === 'sec-home') updateHomeDashboard();
@@ -1859,12 +1363,14 @@
             item.onclick = () => showSection(item.getAttribute('data-target'));
         });
 
+        /* HOME DASHBOARD UPDATE */
         function updateHomeDashboard() {
             let totalCompleted = 0;
             let totalSolvedEquations = gameState.stats.solvedEquations || 0;
 
             Object.keys(gameState.progress).forEach(artId => {
-                if (gameState.progress[artId].completed) totalCompleted++;
+                const prog = gameState.progress[artId];
+                if (prog.completed) totalCompleted++;
             });
 
             document.getElementById('stat-completed-count').innerText = totalCompleted;
@@ -1883,7 +1389,7 @@
 
             updatePowerUpUI();
 
-            const level = Math.floor(totalSolvedEquations / 5) + 1;
+            const level = Math.floor(totalSolvedEquations / 25) + 1;
             document.getElementById('home-user-lvl').innerText = `Nível ${level}`;
 
             const totalGamePixels = ARTWORKS.reduce((sum, art) => sum + art.width * art.height, 0);
@@ -1895,6 +1401,24 @@
             const gameProgPercent = totalGamePixels > 0 ? Math.floor((totalPainted / totalGamePixels) * 100) : 0;
             document.getElementById('stat-game-progress').innerText = `${gameProgPercent}%`;
             document.getElementById('stat-game-progress-bar').style.width = `${gameProgPercent}%`;
+
+            const catCounts = {};
+            ARTWORKS.forEach(art => {
+                const prog = gameState.progress[art.id];
+                if (prog && Object.keys(prog.paintedPixels).length > 0) {
+                    catCounts[art.category] = (catCounts[art.category] || 0) + Object.keys(prog.paintedPixels).length;
+                }
+            });
+            let favCat = "Nenhuma";
+            let maxCatVal = 0;
+            Object.entries(catCounts).forEach(([catId, count]) => {
+                if (count > maxCatVal) {
+                    maxCatVal = count;
+                    const catObj = CATEGORIES.find(c => c.id === catId);
+                    favCat = catObj ? catObj.name : catId;
+                }
+            });
+            document.getElementById('stat-fav-cat').innerText = favCat;
 
             const resumeCard = document.getElementById('home-resume-card');
             if (gameState.lastPlayedArtId) {
@@ -1919,6 +1443,7 @@
             }
         }
 
+        /* CATEGORIES VIEW */
         function renderCategoriesView() {
             const grid = document.getElementById('categories-grid');
             grid.innerHTML = '';
@@ -1999,64 +1524,7 @@
             document.getElementById('sec-category-detail').classList.add('hidden');
         };
 
-        function paintColorPixels(colorKey) {
-            if (!currentArt || !colorKey) return;
-            const artProg = gameState.progress[currentArt.id];
-
-            const unpaintedCells = [];
-            for (let r = 0; r < currentArt.height; r++) {
-                for (let c = 0; c < currentArt.width; c++) {
-                    const posKey = `${c},${r}`;
-                    if (currentArt.grid[r][c] === colorKey && !artProg.paintedPixels[posKey]) {
-                        unpaintedCells.push({ c, r, posKey });
-                    }
-                }
-            }
-
-            if (unpaintedCells.length === 0) return;
-
-            const initialCount = unpaintedCells.length;
-            const pillCountEl = document.getElementById(`pill-count-${colorKey}`);
-
-            if (gameState.settings.colorAnimation) {
-                isPaintingAnimating = true;
-                let step = 0;
-
-                const animInterval = setInterval(() => {
-                    if (step < unpaintedCells.length) {
-                        const cell = unpaintedCells[step];
-                        artProg.paintedPixels[cell.posKey] = colorKey;
-                        
-                        
-                        if (pillCountEl) {
-                            const remaining = initialCount - (step + 1);
-                            pillCountEl.innerText = Math.max(0, remaining);
-                        }
-
-                        renderCanvas();
-                        playSound('pop');
-                        step++;
-                    } else {
-                        clearInterval(animInterval);
-                        isPaintingAnimating = false;
-                        saveGameData();
-                        refreshPalette();
-                        updatePowerUpUI();
-                    }
-                }, 70);
-            } else {
-                unpaintedCells.forEach(cell => {
-                    artProg.paintedPixels[cell.posKey] = colorKey;
-                });
-                if (pillCountEl) pillCountEl.innerText = 0;
-                
-                saveGameData();
-                renderCanvas();
-                refreshPalette();
-                updatePowerUpUI();
-            }
-        }
-
+        /* ALBUM VIEW */
         function renderAlbumView() {
             const completedList = document.getElementById('album-content-completed');
             const progressList = document.getElementById('album-content-progress');
@@ -2113,15 +1581,19 @@
                     `;
                     card.querySelector('button').onclick = () => startPainting(art.id);
                     progressList.appendChild(card);
-                    renderThumbnail(card.querySelector('.art-thumb-canvas'), art);
+                    renderThumbnail(card.querySelector('.album-thumb-canvas'), art);
                 }
             });
 
             document.getElementById('album-completed-count').innerText = completedCount;
             document.getElementById('album-progress-count').innerText = progressCount;
 
-            if (completedCount === 0) completedList.innerHTML = `<p class="col-span-2 text-center text-xs text-slate-500 py-8">Nenhum desenho concluído ainda.</p>`;
-            if (progressCount === 0) progressList.innerHTML = `<p class="text-center text-xs text-slate-500 py-8">Nenhum desenho em andamento.</p>`;
+            if (completedCount === 0) {
+                completedList.innerHTML = `<p class="col-span-2 text-center text-xs text-slate-500 py-8">Nenhum desenho concluído ainda.</p>`;
+            }
+            if (progressCount === 0) {
+                progressList.innerHTML = `<p class="text-center text-xs text-slate-500 py-8">Nenhum desenho em andamento.</p>`;
+            }
         }
 
         document.getElementById('album-tab-completed').onclick = function() {
@@ -2144,16 +1616,12 @@
             document.getElementById('album-content-completed').classList.add('hidden');
         };
 
-        /* SETTINGS HANDLERS */
+        /* ==========================================================================
+           7. SETTINGS & SAVE BACKUP
+           ========================================================================== */
         document.getElementById('setting-sound').onchange = (e) => {
             gameState.settings.sound = e.target.checked;
             saveGameData();
-        };
-
-        document.getElementById('setting-music').onchange = (e) => {
-            gameState.settings.music = e.target.checked;
-            saveGameData();
-            updateLevelMusicState();
         };
 
         document.getElementById('setting-vibration').onchange = (e) => {
@@ -2161,22 +1629,19 @@
             saveGameData();
         };
 
-        document.getElementById('setting-color-animation').onchange = (e) => {
-            gameState.settings.colorAnimation = e.target.checked;
-            saveGameData();
-        };
-
         document.getElementById('btn-export-save').onclick = () => {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(gameState, null, 2));
             const dlAnchorElem = document.createElement('a');
             dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", `pixel_quiz_save_${new Date().toISOString().slice(0,10)}.json`);
+            dlAnchorElem.setAttribute("download", `pixel_math_save_${new Date().toISOString().slice(0,10)}.json`);
             document.body.appendChild(dlAnchorElem);
             dlAnchorElem.click();
             dlAnchorElem.remove();
         };
 
-        document.getElementById('btn-import-save').onclick = () => document.getElementById('import-file-input').click();
+        document.getElementById('btn-import-save').onclick = () => {
+            document.getElementById('import-file-input').click();
+        };
 
         document.getElementById('import-file-input').onchange = (e) => {
             const file = e.target.files[0];
@@ -2189,9 +1654,14 @@
                     if (importedData && importedData.progress) {
                         gameState = importedData;
                         saveGameData();
+                        alert("Progresso importado com sucesso!");
                         showSection('sec-home');
+                    } else {
+                        alert("Arquivo JSON inválido.");
                     }
-                } catch (err) {}
+                } catch (err) {
+                    alert("Erro ao ler o arquivo JSON.");
+                }
             };
             reader.readAsText(file);
         };
@@ -2203,7 +1673,11 @@
 
         accordionBtn.onclick = () => {
             const isHidden = accordionContent.classList.toggle('hidden');
-            accordionChevron.classList.toggle('rotate-180', !isHidden);
+            if (isHidden) {
+                accordionChevron.classList.remove('rotate-180');
+            } else {
+                accordionChevron.classList.add('rotate-180');
+            }
         };
 
         /* Reset Modal */
@@ -2228,12 +1702,11 @@
             gameState = {
                 progress: {},
                 lastPlayedArtId: null,
-                powerups: { autorespond: 1, eliminate: 1 },
+                powerupCharges: 1,
                 powerupOpProgress: 0,
                 stats: { totalTimeSeconds: 0, totalClicks: 0, correctClicks: 0, totalErrors: 0, solvedEquations: 0, powerupsUsed: 0 },
-                settings: { sound: true, music: true, vibration: true, colorAnimation: true }
+                settings: { sound: true, vibration: true }
             };
-            stopLevelMusic();
             resetModal.classList.add('hidden');
             showSection('sec-home');
         };
@@ -2249,37 +1722,14 @@
             showSection('sec-home');
         };
 
-        /* INITIALIZATION */
+        /* ==========================================================================
+           8. INIT ON LOAD
+           ========================================================================== */
         window.onload = function () {
             loadSaveData();
-            document.getElementById('setting-sound').checked = gameState.settings.sound;
-            document.getElementById('setting-music').checked = gameState.settings.music;
-            document.getElementById('setting-vibration').checked = gameState.settings.vibration;
-            document.getElementById('setting-color-animation').checked = gameState.settings.colorAnimation;
             showSection('sec-home');
             checkPWAInstallation();
         };
     </script>
-    <!-- MODAL DE INSTALAÇÃO PWA -->
-    <div id="pwa-install-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="glass border border-sky-500/40 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-center">
-            <div class="w-14 h-14 bg-sky-500/20 text-sky-400 rounded-2xl flex items-center justify-center mx-auto text-2xl border border-sky-500/40">
-                <i class="fa-solid fa-mobile-screen-button"></i>
-            </div>
-            <div>
-                <h3 class="text-lg font-extrabold text-slate-100">Instalar Pixel Quiz?</h3>
-                <p class="text-xs text-slate-300 mt-1">Instale o aplicativo na sua tela inicial para jogar offline e ter uma experiência em tela cheia.</p>
-                <p id="pwa-install-help" class="hidden text-xs text-sky-300 mt-2">Se a instalação ainda não estiver disponível, aguarde alguns instantes e toque em Instalar novamente. Você também pode usar a opção Instalar aplicativo ou Adicionar à tela inicial no menu do navegador. No iPhone/iPad, use Compartilhar e Adicionar à Tela de Início no Safari.</p>
-            </div>
-            <div class="flex space-x-2 pt-2">
-                <button id="pwa-dismiss-btn" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl text-xs active:scale-95 transition">
-                    Talvez depois
-                </button>
-                <button id="pwa-install-btn" class="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-extrabold py-2.5 rounded-xl text-xs active:scale-95 transition shadow-lg shadow-sky-500/20">
-                    Instalar
-                </button>
-            </div>
-        </div>
-    </div>
 </body>
 </html>
