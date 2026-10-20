@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pixel-quiz-v3';
+const CACHE_NAME = 'pixel-quiz-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -9,7 +9,26 @@ const ASSETS_TO_CACHE = [
   './audio/card.mp3',
   './audio/error.mp3',
   './audio/win.mp3',
-  './audio/bg_music.mp3'
+  './audio/bg_music.mp3',
+  './vendor/confetti-1.6.0.min.js',
+  './vendor/fontawesome/css/all.min.css',
+  './vendor/fontawesome/webfonts/fa-brands-400.ttf',
+  './vendor/fontawesome/webfonts/fa-brands-400.woff2',
+  './vendor/fontawesome/webfonts/fa-regular-400.ttf',
+  './vendor/fontawesome/webfonts/fa-regular-400.woff2',
+  './vendor/fontawesome/webfonts/fa-solid-900.ttf',
+  './vendor/fontawesome/webfonts/fa-solid-900.woff2',
+  './vendor/fontawesome/webfonts/fa-v4compatibility.ttf',
+  './vendor/fontawesome/webfonts/fa-v4compatibility.woff2',
+  './vendor/inter/inter.css',
+  './vendor/inter/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuBWYMZg.ttf',
+  './vendor/inter/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyYMZg.ttf',
+  './vendor/inter/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf',
+  './vendor/inter/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf',
+  './vendor/inter/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf',
+  './vendor/inter/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf',
+  './vendor/inter/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf',
+  './vendor/tailwind-3.4.17.js'
 ];
 
 self.addEventListener('install', (event) => {
