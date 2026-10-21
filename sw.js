@@ -3,7 +3,7 @@ const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  './PixelColorQuiz.png',
+  './PixelColorsQuiz.png',
   './audio/pop.mp3',
   './audio/powerup.mp3',
   './audio/card.mp3',
