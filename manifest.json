@@ -3,13 +3,13 @@
   "name": "Pixel Colors Quiz",
   "icons": [
     {
-      "src": "PixelColorQuiz.png",
+      "src": "PixelColorsQuiz.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "PixelColorQuiz.png",
+      "src": "PixelColorsQuiz.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
